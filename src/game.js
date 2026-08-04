@@ -21,6 +21,10 @@ const SIGILS = Object.freeze({
   'bifurcated': ['↙↘', 'Bifurcated Strike', 'Attacks the lanes to the left and right.'],
   'trifurcated': ['3X', 'Trifurcated Strike', 'Attacks left, forward, and right.'],
   'fledgling': ['↑', 'Fledgling', 'Matures after surviving its side turn.'],
+  'rabbit-hole': ['RAB', 'Rabbit Hole', 'Playing Warren adds a free 0/1 Rabbit to your hand.'],
+  'fecundity': ['COPY', 'Fecundity', 'Adds one matching copy to your hand; that copy cannot replicate again.'],
+  'unkillable': ['∞', 'Unkillable', 'Returns to your hand at printed Health after it dies or is sacrificed.'],
+  'stinky': ['−1', 'Stinky', 'Lowers the directly opposing attacker’s Power by one, to a minimum of zero.'],
 });
 const PLAYABLE_REWARDS = ['cat','blackGoat','mantis','adder','raven','riverSnapper','grizzly','rattler','turkeyVulture','mantisGod'];
 

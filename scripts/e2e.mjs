@@ -86,6 +86,20 @@ try {
   assert.ok((await page.evaluate(() => window.__BLOOD_BONE__.snapshot().audio.cueCount)) >= 12);
   await page.waitForTimeout(2400);
 
+  // The full rules dialog explains numbers, lane targeting, special strikes, and scale math.
+  await page.locator('#rulesButton').click();
+  assert.equal(await page.locator('#rulesDialog').isVisible(), true);
+  const rulesText = await page.locator('#rulesDialog').innerText();
+  assert.match(rulesText, /Power is the damage[\s\S]*Health is how much damage/);
+  assert.match(rulesText, /Bifurcated Strike[\s\S]*Airborne flies over/);
+  assert.match(rulesText, /Wolf deals 3 Power[\s\S]*lead by 2/);
+  await page.screenshot({ path: 'artifacts/rules.png', fullPage: true });
+  await page.locator('#replayTutorial').scrollIntoViewIfNeeded();
+  assert.equal(await page.locator('#replayTutorial').isVisible(), true);
+  assert.ok((await page.locator('#sigilGlossary').innerText()).includes('Stinky'));
+  await page.screenshot({ path: 'artifacts/rules-sigils.png', fullPage: true });
+  await page.locator('#rulesDialog .dialog-close').click();
+
   // Sound controls change and persist independent levels without interrupting the track.
   await page.locator('#audioButton').click();
   assert.equal(await page.locator('#audioDialog').isVisible(), true);
