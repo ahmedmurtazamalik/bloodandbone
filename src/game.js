@@ -1,6 +1,6 @@
 import { CARD_LIBRARY, STARTER_DECK, createCard } from './cards.js';
 import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn } from './core.js';
-import { createRun, completeBattle, chooseReward, ENCOUNTERS, startingBonesForEncounter } from './run.js';
+import { createRun, completeBattle, chooseReward, retryBattle, ENCOUNTERS, startingBonesForEncounter, startingBonesForRun } from './run.js';
 import { previewForTurn, deployPreview } from './encounters.js';
 import { CARD_ART } from './illustrations.js';
 import { TutorialController, TUTORIAL_STEPS } from './tutorial.js';
@@ -87,12 +87,14 @@ function startBattle() {
     hand = [createCard('squirrel'), fairCard, ...deck.splice(0, 2)].filter(Boolean);
   }
   const sideDeck = Array.from({ length: 9 }, () => createCard('squirrel'));
-  const startingBones = startingBonesForEncounter(run.encounter);
+  const marrowBones = startingBonesForEncounter(run.encounter);
+  const startingBones = startingBonesForRun(run);
   battle = createBattle({ hand, deck, sideDeck, bones: startingBones, hasDrawn: true, turn: 1 });
   preview = previewForTurn(run.encounter, 1);
   ledger.clear(); renderedLogEntries = 0; ledger.beginTurn(1);
   ledger.add({ type: 'battle-start', encounterName: ENCOUNTERS[run.encounter].name, handNames: hand.map(card => card.name) });
-  ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: startingBones, total: startingBones });
+  ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: marrowBones, total: marrowBones });
+  if (run.losses) ledger.add({ type: 'bones', reason: 'Broken Bones', amount: 2, total: startingBones, pluralSource: true });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   selectedId = null; sacrificeLanes = []; selectionStage = null; busy = false;
   scene = 'battle'; render();
@@ -260,6 +262,7 @@ function finishBattle(won) {
   if (run.phase === 'reward') {
     scene = 'reward'; rewardKeys = [...run.rewardOptions];
   } else if (run.phase === 'victory') scene = 'victory';
+  else if (run.phase === 'retry') scene = 'retry';
   else scene = 'defeat';
   if (scene === 'reward') audio.playCue('reward');
   else if (scene === 'victory') { audio.playCue('victory'); audio.fadeMusic(audio.settings.musicVolume * .38, 1200); }
@@ -401,21 +404,23 @@ function renderRewards() {
 
 function renderResult() {
   const won = scene === 'victory';
-  ui.resultEyebrow.textContent = won ? 'THREE TRIALS SURVIVED' : 'THE SCALE CLAIMS ITS DUE';
-  ui.resultTitle.textContent = won ? 'THE TABLE YIELDS' : 'YOUR CANDLE GOES DARK';
-  ui.resultCopy.textContent = won ? `Your ${run.deck.length}-card deck mastered blood, bones, lanes, and sigils.` : 'Rebuild your opening deck and read the incoming row more carefully.';
+  const retrying = scene === 'retry';
+  ui.resultEyebrow.textContent = won ? 'THREE TRIALS SURVIVED' : retrying ? 'YOUR BONES BREAK · NOT YOUR WILL' : 'THE SCALE CLAIMS ITS DUE';
+  ui.resultTitle.textContent = won ? 'THE TABLE YIELDS' : retrying ? 'RISE WITH BROKEN BONES' : 'YOUR CANDLE GOES DARK';
+  ui.resultCopy.textContent = won ? `Your ${run.deck.length}-card deck mastered blood, bones, lanes, and sigils.` : retrying ? 'Repeat this trial with 2 emergency Bones added to your Marrow Reserve. This mercy is offered only once per run.' : 'Rebuild your opening deck and read the incoming row more carefully.';
+  ui.restartButton.textContent = retrying ? 'RETRY THIS TRIAL' : 'DEAL AGAIN';
 }
 
 function render() {
   ui.titleScreen.hidden = scene !== 'title'; ui.tableScreen.hidden = scene !== 'battle'; ui.rewardScreen.hidden = scene !== 'reward';
-  ui.resultScreen.hidden = scene !== 'victory' && scene !== 'defeat';
-  if (scene === 'battle') { renderBattle(); renderTurnLog(); } if (scene === 'reward') renderRewards(); if (scene === 'victory' || scene === 'defeat') renderResult();
+  ui.resultScreen.hidden = !['victory', 'retry', 'defeat'].includes(scene);
+  if (scene === 'battle') { renderBattle(); renderTurnLog(); } if (scene === 'reward') renderRewards(); if (['victory', 'retry', 'defeat'].includes(scene)) renderResult();
   renderTutorial(); renderAudioControls();
 }
 
 ui.startButton.addEventListener('click', () => startRun(tutorial.shouldAutoStart()));
 ui.tutorialButton.addEventListener('click', () => { tutorial.replay(); startRun(); });
-ui.restartButton.addEventListener('click', () => startRun());
+ui.restartButton.addEventListener('click', () => { if (scene === 'retry') { run = retryBattle(run); startBattle(); } else startRun(); });
 ui.mainDeck.addEventListener('click', () => draw('main')); ui.sideDeck.addEventListener('click', () => draw('side'));
 ui.bellButton.addEventListener('click', ringBell); ui.offerButton.addEventListener('click', lockOffering); ui.cancelButton.addEventListener('click', clearSelection);
 ui.rulesButton.addEventListener('click', () => { audio.playCue('ui'); ui.rulesDialog.showModal(); });
@@ -442,6 +447,7 @@ if (new URLSearchParams(location.search).has('debug')) {
   window.__BLOOD_BONE__ = {
     snapshot: () => ({ scene, encounter: run?.encounter ?? null, turn: battle?.turn ?? null, handCount: battle?.hand.length ?? 0, playerCards: battle?.playerLanes.filter(Boolean).map(card => card.key) || [], opponentCards: battle?.opponentLanes.filter(Boolean).map(card => card.key) || [], bones: battle?.bones ?? 0, scale: battle?.scale ?? 0, tutorial: tutorial.current()?.id || null, audio: audio.snapshot(), turnLog: ledger.snapshot(), preview: preview.map(entry => ({ lane: entry.lane, key: entry.card.key })) }),
     winBattle: () => { if (scene === 'battle') finishBattle(true); },
+    loseBattle: () => { if (scene === 'battle') finishBattle(false); },
   };
 }
 

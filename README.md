@@ -70,6 +70,8 @@ The first turn uses the opening hand directly. On every later turn, choose exact
 
 Blood is paid immediately and cannot be saved. Every friendly creature that actually dies gives one Bone. Bone cards spend that accumulated pool. The **Marrow Reserve** starts trials I–III with 1, 2, and 3 Bones respectively, making low-cost Bone plays available early while expensive creatures still require deaths.
 
+The first loss in a run triggers **Broken Bones** instead of immediate defeat: retry the same trial once with 2 emergency Bones added to its normal reserve. The deck and encounter do not change. A second loss ends the run, extending a close campaign without removing its stakes.
+
 ### Combat
 
 Press **Ring the Bell** to end your action phase.

@@ -162,6 +162,27 @@ try {
   assert.equal(restoredAudio.sfxVolume, .64);
   assert.equal(restoredAudio.musicPlaying, true);
 
+  // A first loss retries the same trial with two Broken Bones; the second loss is final.
+  const catchup = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  captureErrors(catchup);
+  await catchup.addInitScript(() => localStorage.setItem('bb_tutorial_completed', 'true'));
+  await catchup.goto('http://127.0.0.1:4174/?debug=1', { waitUntil: 'networkidle' });
+  await catchup.locator('#startButton').click();
+  await catchup.waitForFunction(() => window.__BLOOD_BONE__?.snapshot().scene === 'battle');
+  await catchup.evaluate(() => window.__BLOOD_BONE__.loseBattle());
+  await catchup.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'retry');
+  assert.match(await catchup.locator('#resultScreen').innerText(), /RISE WITH BROKEN BONES[\s\S]*2 emergency Bones[\s\S]*RETRY THIS TRIAL/i);
+  await catchup.screenshot({ path: 'artifacts/broken-bones.png', fullPage: true });
+  await catchup.locator('#restartButton').click();
+  await catchup.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'battle');
+  assert.equal(await catchup.evaluate(() => window.__BLOOD_BONE__.snapshot().encounter), 0);
+  assert.equal(await catchup.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 3);
+  assert.match(await catchup.locator('#turnLog').innerText(), /Marrow Reserve adds 1 Bone[\s\S]*Broken Bones add 2 Bones\. You have 3/i);
+  await catchup.evaluate(() => window.__BLOOD_BONE__.loseBattle());
+  await catchup.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'defeat');
+  assert.match(await catchup.locator('#resultScreen').innerText(), /YOUR CANDLE GOES DARK[\s\S]*DEAL AGAIN/i);
+  await catchup.close();
+
   // Mobile layout keeps page width contained and preserves the internal board scroller.
   const mobile = await browser.newPage({ viewport: { width: 390, height: 844 } });
   captureErrors(mobile);
@@ -175,7 +196,7 @@ try {
   await mobile.close();
 
   assert.deepEqual(errors, []);
-  console.log('E2E OK: semantic turn ledger, soundtrack playback, SFX, creature calls, tutorial, illustrated cards, 3 encounters, rewards, victory, mobile, console');
+  console.log('E2E OK: semantic turn ledger, soundtrack playback, SFX, creature calls, tutorial, illustrated cards, 3 encounters, rewards, Broken Bones retry, victory, mobile, console');
 } finally {
   await browser.close();
   server.kill('SIGTERM');

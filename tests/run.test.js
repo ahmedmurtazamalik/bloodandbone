@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRun, completeBattle, chooseReward, startingBonesForEncounter } from '../src/run.js';
+import { createRun, completeBattle, chooseReward, startingBonesForEncounter, startingBonesForRun } from '../src/run.js';
 
 test('Marrow Reserve scales from one to three starting Bones across the trials', () => {
   assert.equal(startingBonesForEncounter(0), 1);
@@ -48,9 +48,18 @@ test('three victories with two card rewards complete a compact run', () => {
   assert.equal(run.phase, 'victory');
 });
 
-test('a loss ends the run without changing its deck', () => {
+test('a first loss retries the same trial with two Broken Bones', () => {
   const run = createRun();
   const lost = completeBattle(run, false);
-  assert.equal(lost.phase, 'defeat');
+  assert.equal(lost.phase, 'retry');
+  assert.equal(lost.encounter, run.encounter);
   assert.deepEqual(lost.deck, run.deck);
+  assert.equal(startingBonesForRun(lost), 3);
+});
+
+test('a second loss ends the run without changing its deck', () => {
+  const run = completeBattle(createRun(), false);
+  const lostAgain = completeBattle(run, false);
+  assert.equal(lostAgain.phase, 'defeat');
+  assert.deepEqual(lostAgain.deck, run.deck);
 });

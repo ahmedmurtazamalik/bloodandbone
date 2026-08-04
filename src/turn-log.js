@@ -30,7 +30,7 @@ export function describeEvent(event) {
     case 'fecundity': return `${event.cardName} creates one copy in your hand. The copy cannot replicate again.`;
     case 'return-hand': return `${event.cardName} is Unkillable and returns to your hand after ${event.reason === 'sacrifice' ? 'the sacrifice' : 'dying'}.`;
     case 'stinky': return `${event.sourceName}’s Stinky lowers ${event.attackerName} from ${event.powerBefore} Power to ${event.powerAfter} Power for this attack.`;
-    case 'bones': return `${event.reason} ${event.amount > 0 ? 'adds' : 'spends'} ${plural(Math.abs(event.amount), 'Bone')}. You have ${event.total}.`;
+    case 'bones': return `${event.reason} ${event.amount > 0 ? (event.pluralSource ? 'add' : 'adds') : 'spends'} ${plural(Math.abs(event.amount), 'Bone')}. You have ${event.total}.`;
     case 'turn-ready': return event.drawRequired ? 'Choose either the creature deck or the Squirrel deck to begin your turn.' : 'Both draw piles are empty, so you may play or ring the bell immediately.';
     case 'victory': return `You win the trial with the scale at ${event.scale}.`;
     case 'defeat': return `The opponent wins the trial with the scale at ${event.scale}.`;

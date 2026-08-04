@@ -43,6 +43,7 @@ test('event formatter explains non-combat actions without exposing internal keys
   assert.equal(describeEvent({ type: 'return-hand', cardName: 'Ouroboros', reason: 'sacrifice' }), 'Ouroboros is Unkillable and returns to your hand after the sacrifice.');
   assert.equal(describeEvent({ type: 'return-hand', cardName: 'Cockroach', reason: 'combat' }), 'Cockroach is Unkillable and returns to your hand after dying.');
   assert.equal(describeEvent({ type: 'stinky', sourceName: 'Skunk', attackerName: 'Wolf', powerBefore: 3, powerAfter: 2 }), 'Skunk’s Stinky lowers Wolf from 3 Power to 2 Power for this attack.');
+  assert.equal(describeEvent({ type: 'bones', reason: 'Broken Bones', amount: 2, total: 3, pluralSource: true }), 'Broken Bones add 2 Bones. You have 3.');
 });
 
 test('turn ledger groups player and opponent phases and bounds old turns', () => {

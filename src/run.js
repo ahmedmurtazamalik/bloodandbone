@@ -9,6 +9,7 @@ export const ENCOUNTERS = Object.freeze([
 export const REWARD_POOL = Object.freeze(['cat','blackGoat','mantis','adder','raven','riverSnapper','grizzly','rattler','turkeyVulture','mantisGod']);
 
 export const startingBonesForEncounter = encounter => Math.min(3, Math.max(1, Number(encounter) + 1 || 1));
+export const startingBonesForRun = run => startingBonesForEncounter(run?.encounter) + (run?.losses ? 2 : 0);
 
 function createRewardOffer(run, count = 3) {
   let available = REWARD_POOL.filter(key => !run.deck.includes(key) && !run.rewardHistory.includes(key));
@@ -19,11 +20,11 @@ function createRewardOffer(run, count = 3) {
 }
 
 export function createRun({ rewardSeed = 0 } = {}) {
-  return { encounter: 0, phase: 'battle', deck: [...STARTER_DECK], victories: 0, rewardSeed, rewardHistory: [], rewardOptions: [] };
+  return { encounter: 0, phase: 'battle', deck: [...STARTER_DECK], victories: 0, losses: 0, rewardSeed, rewardHistory: [], rewardOptions: [] };
 }
 
 export function completeBattle(run, won) {
-  if (!won) return { ...run, deck: [...run.deck], phase: 'defeat' };
+  if (!won) return { ...run, deck: [...run.deck], losses: run.losses + 1, phase: run.losses ? 'defeat' : 'retry' };
   const victories = run.victories + 1;
   const next = {
     ...run,
@@ -45,4 +46,8 @@ export function chooseReward(run, cardKey) {
     phase: 'battle',
     rewardOptions: [],
   };
+}
+
+export function retryBattle(run) {
+  return run.phase === 'retry' ? { ...run, phase: 'battle' } : run;
 }
