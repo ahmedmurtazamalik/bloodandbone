@@ -66,6 +66,31 @@ test('Fecundity creates one non-replicating copy of Field Mice in hand', () => {
   assert.deepEqual(result.events, [{ type: 'fecundity', cardName: 'Field Mice' }]);
 });
 
+test('Unkillable returns a sacrificed creature to the player hand and still grants a Bone', () => {
+  const stoat = createCard('stoat');
+  const ouroboros = createCard('ouroboros');
+  const result = playCard(createBattle({ hand: [stoat], playerLanes: [ouroboros] }), stoat.id, 0, [0]);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.playerLanes[0].name, 'Stoat');
+  assert.equal(result.state.hand.length, 1);
+  assert.equal(result.state.hand[0].name, 'Ouroboros');
+  assert.equal(result.state.bones, 1);
+  assert.ok(result.events.some(event => event.type === 'return-hand' && event.cardName === 'Ouroboros'));
+});
+
+test('Unkillable returns a player creature killed in combat to hand', () => {
+  const wolf = createCard('wolf');
+  const cockroach = createCard('cockroach');
+  const result = resolveCombat(createBattle({ opponentLanes: [wolf], playerLanes: [cockroach] }), 'opponent');
+
+  assert.equal(result.state.playerLanes[0], null);
+  assert.equal(result.state.hand.length, 1);
+  assert.equal(result.state.hand[0].name, 'Cockroach');
+  assert.equal(result.state.bones, 1);
+  assert.deepEqual(result.events.map(event => event.type), ['strike', 'death', 'return-hand']);
+});
+
 test('failed resource payments do not mutate the battle', () => {
   const battle = createBattle({
     hand: [{ id: 'vulture', name: 'Turkey Vulture', cost: { type: 'bones', amount: 8 }, power: 3, health: 3 }],

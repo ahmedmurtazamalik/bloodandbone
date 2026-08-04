@@ -53,6 +53,7 @@ export function createCard(key) {
     ...template,
     key,
     id: `${key}-${nextInstance++}`,
+    maxHealth: template.health,
     cost: { ...template.cost },
     sigils: [...template.sigils],
   };

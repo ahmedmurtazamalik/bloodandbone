@@ -1,6 +1,7 @@
 const LANES = 4;
 
 const cloneCard = card => card ? { ...card, sigils: [...(card.sigils || [])] } : null;
+const reviveCard = card => ({ ...cloneCard(card), health: card.maxHealth ?? Math.max(1, card.health) });
 const rabbitFrom = source => ({
   id: `rabbit-from-${source.id}`,
   key: 'rabbit',
@@ -63,15 +64,20 @@ export function playCard(state, cardId, lane, sacrificeLanes = []) {
   if (state.playerLanes[lane] && !uniqueSacrifices.includes(lane)) return { ok: false, reason: 'LANE_OCCUPIED', state };
 
   const next = createBattle(state);
+  const events = [];
   if (cost.type === 'bones') next.bones -= cost.amount;
   for (const index of uniqueSacrifices) {
     if (next.playerLanes[index].sigils?.includes('many-lives')) continue;
+    if (next.playerLanes[index].sigils?.includes('unkillable')) {
+      const returning = reviveCard(next.playerLanes[index]);
+      next.hand.push(returning);
+      events.push({ type: 'return-hand', cardName: returning.name, lane: index, reason: 'sacrifice' });
+    }
     next.playerLanes[index] = null;
     next.bones += 1;
   }
   next.playerLanes[lane] = cloneCard(card);
   next.hand.splice(cardIndex, 1);
-  const events = [];
   if (card.sigils?.includes('rabbit-hole')) {
     next.hand.push(rabbitFrom(card));
     events.push({ type: 'create-hand', sourceName: card.name, cardName: 'Rabbit' });
@@ -113,6 +119,7 @@ export function resolveCombat(state, side = 'player') {
       if (defender && !fliesOver) {
         const defenderName = defender.name;
         const defenderKey = defender.key;
+        const returning = defender.sigils?.includes('unkillable') ? reviveCard(defender) : null;
         defender.health -= attacker.power;
         if (attacker.sigils?.includes('touch-of-death')) defender.health = 0;
         events.push({ type: 'strike', side, lane: targetLane, sourceLane: lane, damage: attacker.power, attackerName: attacker.name, attackerKey: attacker.key, defenderName, defenderKey, healthRemaining: Math.max(0, defender.health), touchOfDeath: attacker.sigils?.includes('touch-of-death') || false });
@@ -120,6 +127,10 @@ export function resolveCombat(state, side = 'player') {
           defenders[targetLane] = null;
           if (side === 'opponent') next.bones += 1;
           events.push({ type: 'death', side: side === 'player' ? 'opponent' : 'player', lane: targetLane, cardName: defenderName, cardKey: defenderKey, boneGained: side === 'opponent' });
+          if (side === 'opponent' && returning) {
+            next.hand.push(returning);
+            events.push({ type: 'return-hand', cardName: defenderName, lane: targetLane, reason: 'combat' });
+          }
         }
       } else {
         next.scale += side === 'player' ? attacker.power : -attacker.power;

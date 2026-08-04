@@ -40,6 +40,8 @@ test('event formatter explains non-combat actions without exposing internal keys
   assert.equal(describeEvent({ type: 'mature', beforeName: 'Wolf Cub', afterName: 'Wolf', lane: 2, side: 'player' }), 'Your Wolf Cub matures into Wolf in lane 3.');
   assert.equal(describeEvent({ type: 'create-hand', sourceName: 'Warren', cardName: 'Rabbit' }), 'Warren opens a Rabbit Hole and adds Rabbit to your hand.');
   assert.equal(describeEvent({ type: 'fecundity', cardName: 'Field Mice' }), 'Field Mice creates one copy in your hand. The copy cannot replicate again.');
+  assert.equal(describeEvent({ type: 'return-hand', cardName: 'Ouroboros', reason: 'sacrifice' }), 'Ouroboros is Unkillable and returns to your hand after the sacrifice.');
+  assert.equal(describeEvent({ type: 'return-hand', cardName: 'Cockroach', reason: 'combat' }), 'Cockroach is Unkillable and returns to your hand after dying.');
 });
 
 test('turn ledger groups player and opponent phases and bounds old turns', () => {

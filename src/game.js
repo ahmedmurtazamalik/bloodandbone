@@ -219,11 +219,15 @@ async function animateEvents(events, side) {
     renderTurnLog(); await pacingWait(COMBAT_PACING.emptyPhase); return;
   }
   for (const event of events) {
+    const timing = pacingForEvent(event, reducedMotion);
+    if (!['strike', 'death', 'direct'].includes(event.type)) {
+      ledger.add(event); renderTurnLog();
+      audio.playCue('ui'); await wait(timing.hold); continue;
+    }
     const defendingRow = side === 'player' ? ui.opponentRow : ui.playerRow;
     const attackingRow = side === 'player' ? ui.playerRow : ui.opponentRow;
     const lane = defendingRow.children[event.lane];
     const attackerLane = attackingRow.children[event.sourceLane ?? event.lane];
-    const timing = pacingForEvent(event, reducedMotion);
     if (event.type !== 'death') attackerLane?.classList.add('attacking');
     await wait(timing.windup);
     ledger.add(event); renderTurnLog();
