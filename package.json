@@ -1,0 +1,15 @@
+{
+  "name": "blood-and-bone",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "test:simulate": "node scripts/simulate.mjs",
+    "serve": "python3 -m http.server 4174",
+    "test:e2e": "node scripts/e2e.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.54.1"
+  }
+}

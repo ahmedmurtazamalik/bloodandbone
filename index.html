@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Blood & Bone — a tactile woodland sacrifice card game.">
+  <title>Blood & Bone</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="hearth-light" aria-hidden="true"></div>
+  <div class="paper-grain" aria-hidden="true"></div>
+  <main id="gameShell">
+    <section id="titleScreen" class="overlay title-screen">
+      <div class="title-plaque">
+        <svg class="title-creature" viewBox="0 0 220 110" aria-hidden="true">
+          <path d="M110 91C77 86 55 62 57 37c2-23 24-29 38-14l15 18 15-18c14-15 36-9 38 14 2 25-20 49-53 54Z"/>
+          <path d="M75 36 47 10l12 30-29-7 26 17-27 12 34 1m82-27 28-26-12 30 29-7-26 17 27 12-34 1" fill="none" stroke-width="7"/>
+          <circle cx="91" cy="55" r="4"/><circle cx="129" cy="55" r="4"/><path d="m99 70 11 8 11-8" fill="none" stroke-width="5"/>
+        </svg>
+        <p class="kicker">A game of offerings and open lanes</p>
+        <h1><span>Blood</span><i>&</i><span>Bone</span></h1>
+        <p class="title-copy">Seat your creatures on the felt. Offer the weak for Blood, keep the Bones they leave behind, and pull the brass scale five marks in your favor.</p>
+        <button id="startButton" class="wood-button primary"><span>Take your seat</span><small>First visit includes a guided hand</small></button>
+        <button id="tutorialButton" class="quiet-button">Learn the table</button>
+      </div>
+      <div class="title-props" aria-hidden="true"><i class="candle one"></i><i class="candle two"></i><span class="loose-card"></span><span class="loose-bone"></span></div>
+    </section>
+
+    <section id="tableScreen" class="table-screen" hidden>
+      <header class="opponent-header">
+        <div class="opponent-presence" aria-hidden="true">
+          <span class="shoulder left"></span><span class="hood"></span><span class="face"></span><span class="shoulder right"></span>
+        </div>
+        <div class="opponent-copy">
+          <p id="trialLabel" class="kicker">Trial I of III</p>
+          <h2 id="opponentName">The Woodsman</h2>
+          <p id="opponentSubtitle">Teaches Blood and open lanes</p>
+        </div>
+        <div class="header-tools">
+          <button id="audioButton" class="book-button audio-button" aria-label="Open sound controls"><span id="audioIcon">♪</span><b>Sound</b></button>
+          <button id="rulesButton" class="book-button" aria-label="Open rules and sigils"><span>?</span><b>Rules</b></button>
+        </div>
+      </header>
+
+      <section class="scale-stage" aria-label="Damage balance">
+        <div class="balance" aria-hidden="true">
+          <div class="scale-pillar"><i></i></div>
+          <div id="scaleBeam" class="scale-beam">
+            <span class="beam-knob"></span>
+            <div class="scale-pan enemy-pan"><i></i><b id="enemyWeights"></b></div>
+            <div class="scale-pan player-pan"><i></i><b id="playerWeights"></b></div>
+          </div>
+          <div class="scale-base"></div>
+        </div>
+        <div class="scale-copy"><span>Opponent</span><strong id="scaleReadout">The balance is even</strong><span>You</span></div>
+      </section>
+
+      <section class="felt-board" id="board">
+        <p class="mobile-board-hint">Swipe the felt to inspect all four lanes →</p>
+        <div class="board-rail top-rail"><span>Incoming next turn</span><b id="enemyPower">0 Power waiting</b></div>
+        <div id="previewRow" class="lane-row preview-row" aria-label="Incoming enemy cards"></div>
+        <div class="lane-divider"><span>They descend here</span></div>
+        <div id="opponentRow" class="lane-row opponent-row" aria-label="Opponent lanes"></div>
+
+        <div class="table-controls">
+          <div id="boneReserve" class="bone-reserve" aria-label="Bone reserve">
+            <div id="bonePile" class="bone-pile" aria-hidden="true"></div>
+            <p><strong id="bonesReadout">0</strong><span>Bones</span></p>
+          </div>
+          <button id="bellButton" class="bell" disabled aria-label="Ring bell and resolve combat">
+            <span class="bell-plunger"></span><span class="bell-dome"></span><span class="bell-base"></span>
+            <b>Ring the bell</b>
+          </button>
+          <div class="turn-plaque"><span id="turnReadout">Turn 1</span><strong id="phaseReadout">Play a card</strong></div>
+        </div>
+
+        <div id="playerRow" class="lane-row player-row" aria-label="Player lanes"></div>
+        <div class="board-rail bottom-rail"><span>Your side of the table</span><b>Four lanes · first strike is yours</b></div>
+      </section>
+
+      <section class="hand-table">
+        <div class="piles">
+          <button id="mainDeck" class="deck-pile" aria-label="Draw from creature deck">
+            <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="mainCount">0</b><em>Creature deck</em><small>Draw unknown</small>
+          </button>
+          <button id="sideDeck" class="deck-pile side" aria-label="Draw a squirrel">
+            <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="sideCount">0</b><em>Squirrel deck</em><small>Draw an offering</small>
+          </button>
+        </div>
+        <div class="hand-wrap">
+          <div class="hand-heading"><span>Your hand</span><p id="instruction">Select a card or ring the bell.</p></div>
+          <div id="hand" class="hand" aria-label="Your hand"></div>
+        </div>
+        <aside id="ledgerPanel" class="turn-ledger" aria-label="Turn-by-turn battle log">
+          <header><div><span>Battle record</span><strong>Turn ledger</strong></div><button id="ledgerToggle" aria-expanded="true">Collapse</button></header>
+          <div id="turnLog" class="turn-log" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
+        </aside>
+      </section>
+
+      <section id="actionTray" class="action-tray" hidden>
+        <p id="selectionSummary"></p>
+        <button id="offerButton" class="wax-button" hidden>Confirm the offering</button>
+        <button id="cancelButton" class="quiet-button">Put card back</button>
+      </section>
+    </section>
+
+    <section id="rewardScreen" class="overlay reward-screen" hidden>
+      <div class="reward-cloth">
+        <p class="kicker">The table relents</p><h2>Choose one creature</h2>
+        <p>Its card joins your deck for every remaining trial.</p>
+        <div id="rewardChoices" class="reward-choices"></div>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="overlay result-screen" hidden>
+      <div class="result-plaque">
+        <p class="kicker" id="resultEyebrow">The ritual ends</p>
+        <h2 id="resultTitle">The scale is silent</h2><p id="resultCopy"></p>
+        <button id="restartButton" class="wood-button primary">Begin another run</button>
+      </div>
+    </section>
+
+    <dialog id="rulesDialog">
+      <form method="dialog"><button class="dialog-close" aria-label="Close rules">×</button></form>
+      <p class="kicker">The little rulebook</p><h2>Blood, Bones & Sigils</h2>
+      <div class="rules-grid">
+        <article><b>Draw</b><p>Your opening hand is dealt. On later turns, choose one unknown creature or one dependable Squirrel.</p></article>
+        <article><b>Blood</b><p>Red-seal cards require creatures already on your side to be offered. Most provide one Blood.</p></article>
+        <article><b>Bones</b><p>Every friendly death leaves one Bone. Ivory-cost cards spend the pile without sacrifices.</p></article>
+        <article><b>Combat</b><p>Ring the bell. Your creatures strike first, left to right. Unblocked Power tips the balance. Reach five.</p></article>
+      </div>
+      <div id="sigilGlossary" class="sigil-glossary"></div>
+      <button id="replayTutorial" class="wood-button secondary">Replay guided hand</button>
+    </dialog>
+
+    <dialog id="audioDialog" class="audio-dialog">
+      <form method="dialog"><button class="dialog-close" aria-label="Close sound controls">×</button></form>
+      <p class="kicker">Sound at the table</p><h2>Audio</h2>
+      <button id="muteButton" class="wood-button secondary">Mute all audio</button>
+      <label class="volume-control"><span>Music</span><output id="musicValue">42%</output><input id="musicVolume" type="range" min="0" max="100" step="1" value="42"></label>
+      <label class="volume-control"><span>Effects & creatures</span><output id="sfxValue">72%</output><input id="sfxVolume" type="range" min="0" max="100" step="1" value="72"></label>
+      <div class="now-playing"><span>Now playing</span><strong>The Hamlet</strong><small>Darkest Dungeon · Stuart Chatwood</small></div>
+    </dialog>
+
+    <aside id="tutorialOverlay" class="tutorial-coach" hidden aria-live="polite">
+      <div class="tutorial-pin"></div>
+      <p id="tutorialProgress">Guided hand · 1 of 11</p>
+      <h2 id="tutorialTitle">Learn the table</h2>
+      <p id="tutorialCopy"></p>
+      <div><button id="tutorialContinue" class="wax-button">Continue</button><button id="tutorialSkip" class="quiet-button">Skip tutorial</button></div>
+    </aside>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </main>
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>

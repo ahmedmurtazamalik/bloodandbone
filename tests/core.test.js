@@ -1,0 +1,155 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createBattle, playCard, resolveCombat, drawCard, ageCards, beginPlayerTurn } from '../src/core.js';
+
+test('blood-cost creatures require and consume eligible sacrifices', () => {
+  const battle = createBattle({
+    hand: [{ id: 'wolf', name: 'Wolf', cost: { type: 'blood', amount: 2 }, power: 3, health: 2 }],
+    playerLanes: [
+      { id: 'squirrel-a', name: 'Squirrel', cost: null, power: 0, health: 1 },
+      { id: 'squirrel-b', name: 'Squirrel', cost: null, power: 0, health: 1 },
+      null,
+      null,
+    ],
+  });
+
+  const result = playCard(battle, 'wolf', 2, [0, 1]);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.playerLanes[0], null);
+  assert.equal(result.state.playerLanes[1], null);
+  assert.equal(result.state.playerLanes[2].name, 'Wolf');
+  assert.equal(result.state.hand.length, 0);
+  assert.equal(result.state.bones, 2);
+});
+
+test('bone-cost creatures spend bones without sacrifices', () => {
+  const battle = createBattle({
+    hand: [{ id: 'adder', name: 'Adder', cost: { type: 'bones', amount: 2 }, power: 1, health: 1 }],
+    bones: 2,
+  });
+  const result = playCard(battle, 'adder', 1);
+  assert.equal(result.ok, true);
+  assert.equal(result.state.bones, 0);
+  assert.equal(result.state.playerLanes[1].name, 'Adder');
+});
+
+test('failed resource payments do not mutate the battle', () => {
+  const battle = createBattle({
+    hand: [{ id: 'vulture', name: 'Turkey Vulture', cost: { type: 'bones', amount: 8 }, power: 3, health: 3 }],
+    bones: 3,
+  });
+  const result = playCard(battle, 'vulture', 0);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, 'NOT_ENOUGH_BONES');
+  assert.equal(result.state, battle);
+});
+
+test('combat resolves lanes left-to-right and open lanes tip the scale', () => {
+  const battle = createBattle({
+    playerLanes: [
+      { id: 'wolf', name: 'Wolf', power: 3, health: 2 },
+      { id: 'elk', name: 'Elk', power: 2, health: 4 },
+      null,
+      null,
+    ],
+    opponentLanes: [
+      { id: 'stoat', name: 'Stoat', power: 1, health: 3 },
+      null,
+      null,
+      null,
+    ],
+  });
+  const result = resolveCombat(battle, 'player');
+  assert.equal(result.state.opponentLanes[0], null);
+  assert.equal(result.state.playerLanes[0].health, 2);
+  assert.equal(result.state.scale, 2);
+  assert.deepEqual(result.events.map(event => event.type), ['strike', 'death', 'direct']);
+});
+
+test('worthy sacrifice provides three blood and many lives survives payment', () => {
+  const battle = createBattle({
+    hand: [{ id: 'urayuli', name: 'Urayuli', cost: { type: 'blood', amount: 4 }, power: 7, health: 7 }],
+    playerLanes: [
+      { id: 'cat', name: 'Cat', power: 0, health: 1, sigils: ['many-lives'] },
+      { id: 'goat', name: 'Black Goat', power: 0, health: 1, sigils: ['worthy-sacrifice'] },
+      null,
+      null,
+    ],
+  });
+  const result = playCard(battle, 'urayuli', 2, [0, 1]);
+  assert.equal(result.ok, true);
+  assert.equal(result.state.playerLanes[0].name, 'Cat');
+  assert.equal(result.state.playerLanes[1], null);
+  assert.equal(result.state.playerLanes[2].name, 'Urayuli');
+  assert.equal(result.state.bones, 1);
+});
+
+test('airborne damage bypasses ordinary blockers but mighty leap intercepts it', () => {
+  const airborne = { id: 'raven', name: 'Raven', power: 2, health: 3, sigils: ['airborne'] };
+  const blocker = { id: 'stump', name: 'Stump', power: 0, health: 3 };
+  const leap = { id: 'bullfrog', name: 'Bullfrog', power: 1, health: 2, sigils: ['mighty-leap'] };
+
+  const bypass = resolveCombat(createBattle({ playerLanes: [airborne], opponentLanes: [blocker] }), 'player');
+  assert.equal(bypass.state.scale, 2);
+  assert.equal(bypass.state.opponentLanes[0].health, 3);
+
+  const intercepted = resolveCombat(createBattle({ playerLanes: [airborne], opponentLanes: [leap] }), 'player');
+  assert.equal(intercepted.state.scale, 0);
+  assert.equal(intercepted.state.opponentLanes[0], null);
+});
+
+test('player chooses exactly one card from the main or squirrel deck each turn', () => {
+  const battle = createBattle({
+    deck: [{ id: 'wolf', name: 'Wolf', power: 3, health: 2 }],
+    sideDeck: [{ id: 'squirrel', name: 'Squirrel', power: 0, health: 1 }],
+    hasDrawn: false,
+  });
+  const draw = drawCard(battle, 'side');
+  assert.equal(draw.ok, true);
+  assert.equal(draw.state.hand.at(-1).name, 'Squirrel');
+  assert.equal(draw.state.sideDeck.length, 0);
+  assert.equal(draw.state.deck.length, 1);
+  const second = drawCard(draw.state, 'main');
+  assert.equal(second.ok, false);
+  assert.equal(second.reason, 'ALREADY_DREW');
+});
+
+test('bifurcated strike attacks adjacent lanes and never the forward lane', () => {
+  const battle = createBattle({
+    playerLanes: [null, { id: 'mantis', name: 'Mantis', power: 1, health: 1, sigils: ['bifurcated'] }],
+    opponentLanes: [{ id: 'bee', name: 'Bee', power: 1, health: 1 }, { id: 'stump', name: 'Stump', power: 0, health: 3 }],
+  });
+  const result = resolveCombat(battle, 'player');
+  assert.equal(result.state.opponentLanes[0], null);
+  assert.equal(result.state.opponentLanes[1].health, 3);
+  assert.equal(result.state.scale, 1);
+});
+
+test('touch of death kills a struck creature regardless of remaining health', () => {
+  const battle = createBattle({
+    playerLanes: [{ id: 'adder', name: 'Adder', power: 1, health: 1, sigils: ['touch-of-death'] }],
+    opponentLanes: [{ id: 'grizzly', name: 'Grizzly', power: 4, health: 6 }],
+  });
+  const result = resolveCombat(battle, 'player');
+  assert.equal(result.state.opponentLanes[0], null);
+});
+
+test('fledgling creatures mature after surviving their side turn', () => {
+  const battle = createBattle({ playerLanes: [{ id: 'cub', key: 'wolfCub', name: 'Wolf Cub', power: 1, health: 1, sigils: ['fledgling'] }] });
+  const aged = ageCards(battle, 'player');
+  assert.equal(aged.playerLanes[0].name, 'Wolf');
+  assert.equal(aged.playerLanes[0].power, 3);
+  assert.equal(aged.playerLanes[0].health, 2);
+  assert.equal(aged.playerLanes[0].sigils.includes('fledgling'), false);
+});
+
+test('an exhausted player can continue taking turns without an impossible draw', () => {
+  const exhausted = beginPlayerTurn(createBattle({ turn: 4, deck: [], sideDeck: [], hasDrawn: false }));
+  assert.equal(exhausted.turn, 5);
+  assert.equal(exhausted.hasDrawn, true);
+
+  const cardsRemain = beginPlayerTurn(createBattle({ turn: 4, deck: [{ id: 'wolf' }], sideDeck: [], hasDrawn: true }));
+  assert.equal(cardsRemain.turn, 5);
+  assert.equal(cardsRemain.hasDrawn, false);
+});
