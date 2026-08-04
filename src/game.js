@@ -152,6 +152,7 @@ function laneClick(lane) {
   }
   if (spentBones) ledger.add({ type: 'bone-spend', amount: card.cost.amount, cardName: card.name });
   ledger.add({ type: 'play', cardName: card.name, lane });
+  result.events?.forEach(event => ledger.add(event));
   if (usedSacrifice) audio.playCue('sacrifice');
   if (spentBones) audio.playCue('boneSpend');
   if (battle.bones > previousBones) setTimeout(() => audio.playCue('boneGain'), 90);

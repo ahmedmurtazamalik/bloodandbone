@@ -38,6 +38,7 @@ test('event formatter explains non-combat actions without exposing internal keys
   assert.equal(describeEvent({ type: 'deploy', cardName: 'Bullfrog', lane: 1 }), 'The opponent sends Bullfrog into lane 2.');
   assert.equal(describeEvent({ type: 'blocked-deploy', cardName: 'Raven', lane: 3 }), 'Raven cannot enter occupied lane 4; deployment fails.');
   assert.equal(describeEvent({ type: 'mature', beforeName: 'Wolf Cub', afterName: 'Wolf', lane: 2, side: 'player' }), 'Your Wolf Cub matures into Wolf in lane 3.');
+  assert.equal(describeEvent({ type: 'create-hand', sourceName: 'Warren', cardName: 'Rabbit' }), 'Warren opens a Rabbit Hole and adds Rabbit to your hand.');
 });
 
 test('turn ledger groups player and opponent phases and bounds old turns', () => {

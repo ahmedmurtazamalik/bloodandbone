@@ -1,6 +1,17 @@
 const LANES = 4;
 
 const cloneCard = card => card ? { ...card, sigils: [...(card.sigils || [])] } : null;
+const rabbitFrom = source => ({
+  id: `rabbit-from-${source.id}`,
+  key: 'rabbit',
+  name: 'Rabbit',
+  cost: { type: 'free', amount: 0 },
+  power: 0,
+  health: 1,
+  sigils: [],
+  tribe: null,
+  rarity: 'token',
+});
 
 export function createBattle(overrides = {}) {
   return {
@@ -54,7 +65,12 @@ export function playCard(state, cardId, lane, sacrificeLanes = []) {
   }
   next.playerLanes[lane] = cloneCard(card);
   next.hand.splice(cardIndex, 1);
-  return { ok: true, state: next };
+  const events = [];
+  if (card.sigils?.includes('rabbit-hole')) {
+    next.hand.push(rabbitFrom(card));
+    events.push({ type: 'create-hand', sourceName: card.name, cardName: 'Rabbit' });
+  }
+  return { ok: true, state: next, events };
 }
 
 export function ageCards(state, side = 'player') {

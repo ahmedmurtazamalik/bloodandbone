@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createBattle, playCard, resolveCombat, drawCard, ageCards, beginPlayerTurn } from '../src/core.js';
+import { createCard } from '../src/cards.js';
 
 test('blood-cost creatures require and consume eligible sacrifices', () => {
   const battle = createBattle({
@@ -32,6 +33,21 @@ test('bone-cost creatures spend bones without sacrifices', () => {
   assert.equal(result.ok, true);
   assert.equal(result.state.bones, 0);
   assert.equal(result.state.playerLanes[1].name, 'Adder');
+});
+
+test('Rabbit Hole adds one free Rabbit to hand when Warren is played', () => {
+  const warren = createCard('warren');
+  const squirrel = createCard('squirrel');
+  const result = playCard(createBattle({ hand: [warren], playerLanes: [null, squirrel] }), warren.id, 0, [1]);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.playerLanes[0].name, 'Warren');
+  assert.equal(result.state.hand.length, 1);
+  assert.deepEqual(
+    { key: result.state.hand[0].key, cost: result.state.hand[0].cost, power: result.state.hand[0].power, health: result.state.hand[0].health },
+    { key: 'rabbit', cost: { type: 'free', amount: 0 }, power: 0, health: 1 },
+  );
+  assert.deepEqual(result.events, [{ type: 'create-hand', sourceName: 'Warren', cardName: 'Rabbit' }]);
 });
 
 test('failed resource payments do not mutate the battle', () => {
