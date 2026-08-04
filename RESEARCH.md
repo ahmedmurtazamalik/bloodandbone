@@ -37,7 +37,7 @@ The audit confirmed that Blood & Bone already uses the intended baseline for the
 
 ## 2. Core battle contract
 
-- Each side has **4 active lanes**. Enemy cards may also be telegraphed in a queue behind their destination lane.
+- Each side has **4 active lanes**. Enemy cards are telegraphed in authored destination lanes; this implementation visibly retargets a blocked reinforcement into the stronger adjacent open lane when possible.
 - Opening hand: **3 main-deck cards + 1 Squirrel**. At the start of each later player turn, choose exactly one card from the main deck or Squirrel side deck before other actions. The side deck initially has ten Squirrels.
 - **Blood is not banked.** To play a Blood-cost card, select enough valid cards already on your board and sacrifice them as part of that play. Most valid sacrifices are worth 1 Blood; Worthy Sacrifice is worth 3. Each sacrificed card that actually dies awards a Bone.
 - **Bones persist during an encounter.** A friendly card dying for any reason normally awards 1 Bone; Bone King awards 4 instead. Bone costs are paid from the pool and do not require emptying lanes through sacrifice.

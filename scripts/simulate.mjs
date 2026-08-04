@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { fileURLToPath } from 'node:url';
 import { CARD_LIBRARY, STARTER_DECK, createCard } from '../src/cards.js';
 import { createBattle, drawCard, playCard, scoutDeck, chooseScoutedCard, maneuverCreature, mendCreature } from '../src/core.js';
 import { previewForTurn } from '../src/encounters.js';
@@ -84,9 +85,10 @@ function useTactic(state, preview) {
   return state;
 }
 
-function simulate(encounter) {
+export function simulateEncounter(encounter) {
   let state = openingBattle(encounter);
-  let preview = previewForTurn(encounter, 1);
+  let preview = previewForTurn(encounter, 1, state);
+  const history = [];
   for (let round = 0; round < 20; round += 1) {
     if (!state.hasDrawn) {
       const shouldDrawSide = encounter === 0 ? state.turn % 3 !== 0 : state.turn % 2 === 0;
@@ -105,19 +107,23 @@ function simulate(encounter) {
 
     const resolvedRound = advanceRound(state, preview);
     state = resolvedRound.nextState;
+    history.push({ turn: resolvedRound.settledState.turn, scale: resolvedRound.settledState.scale });
     if (resolvedRound.outcome) return {
       winner: resolvedRound.outcome.winner,
       reason: resolvedRound.outcome.reason,
       turn: resolvedRound.settledState.turn,
       scale: resolvedRound.settledState.scale,
+      history,
     };
-    preview = previewForTurn(encounter, state.turn);
+    preview = previewForTurn(encounter, state.turn, state);
   }
-  return { winner: null, turn: state.turn, scale: state.scale };
+  return { winner: null, turn: state.turn, scale: state.scale, history };
 }
 
-for (let encounter = 0; encounter < 3; encounter += 1) {
-  const result = simulate(encounter);
-  assert.equal(result.winner, 'player', `encounter ${encounter + 1} was not bot-winnable: ${JSON.stringify(result)}`);
-  console.log(`SIM ${encounter + 1} OK: player won on turn ${result.turn}, scale ${result.scale}`);
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  for (let encounter = 0; encounter < 3; encounter += 1) {
+    const result = simulateEncounter(encounter);
+    assert.equal(result.winner, 'player', `encounter ${encounter + 1} was not bot-winnable: ${JSON.stringify(result)}`);
+    console.log(`SIM ${encounter + 1} OK: player won on turn ${result.turn}, scale ${result.scale}`);
+  }
 }

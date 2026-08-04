@@ -89,7 +89,7 @@ Enemy cards in **Next Turn** are public information. Plan sacrifices and blocker
 
 Each player turn also offers one shared **Tactical Action**: **Maneuver** a creature into an adjacent empty lane, or spend **2 Bones** to **Mend** up to 2 Health. This creates a recurring choice between answering telegraphed lanes, preserving an engine creature, and saving Bones for cards.
 
-Each opponent follows a sixteen-turn authored arc that moves through opening probes, midgame pressure, recovery windows, and endgame threats. Reinforcements often contest an occupied lane instead of filling all four lanes immediately, preserving choices between racing the scale, trading creatures, and preparing a later defense.
+Each opponent follows a sixteen-turn authored arc that moves through opening probes, midgame pressure, recovery windows, and endgame threats. An incoming card keeps its authored lane while that lane is legal. If blocked, the opponent visibly flanks into the stronger adjacent open lane; with no adjacent opening, deployment fails. This prevents reinforcements from being casually discarded while preserving readable positional counterplay.
 
 ### Rewards
 

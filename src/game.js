@@ -257,7 +257,7 @@ async function ringBell() {
   deployment.events.forEach(event => ledger.add(event));
   const entering = preview.find(entry => !resolvedRound.blockedDeployments.includes(entry.lane));
   if (entering) { audio.playCue('place', .7); setTimeout(() => audio.playCreature(entering.card.key), 80); }
-  if (resolvedRound.blockedDeployments.length) showToast('AN INCOMING CREATURE WAITS BEHIND AN OCCUPIED LANE');
+  if (resolvedRound.blockedDeployments.length) showToast('AN INCOMING CREATURE CANNOT ENTER ITS OCCUPIED LANE');
   await pacingWait(COMBAT_PACING.deployment);
 
   opponentCombat.events.filter(event => event.type === 'combat-start').forEach(event => ledger.add(event));
@@ -272,7 +272,7 @@ async function ringBell() {
   playerMaturation.events.forEach(event => ledger.add(event));
   battle = phase('turn-start').state;
   ledger.beginTurn(battle.turn);
-  preview = previewForTurn(run.encounter, battle.turn);
+  preview = previewForTurn(run.encounter, battle.turn, battle);
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   ledger.add({ type: 'turn-ready', drawRequired: !battle.hasDrawn });
   busy = false; render();

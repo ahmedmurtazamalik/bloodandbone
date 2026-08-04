@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ENCOUNTER_SCRIPTS, previewForTurn, deployPreview } from '../src/encounters.js';
+import { createCard } from '../src/cards.js';
 import { createBattle } from '../src/core.js';
 
 test('every encounter script uses legal cards and lanes while allowing breathing turns', () => {
@@ -30,4 +31,33 @@ test('telegraphed cards descend into open enemy lanes without replacing survivor
   assert.equal(result.state.opponentLanes[0].name, 'Survivor');
   assert.equal(result.state.opponentLanes[2].name, 'Stoat');
   assert.deepEqual(result.blocked, [0]);
+});
+
+test('incoming cards visibly retarget from occupied lanes to pressure the live board', () => {
+  const battle = createBattle({
+    playerLanes: [null, createCard('wolf'), null, null],
+    opponentLanes: [null, null, createCard('stoat'), null],
+  });
+
+  const preview = previewForTurn(0, 1, battle);
+
+  assert.equal(preview[0].card.name, 'Stoat');
+  assert.equal(preview[0].lane, 1);
+  assert.equal(battle.opponentLanes[1], null);
+});
+
+test('incoming cards honor an authored lane while it remains legal', () => {
+  const battle = createBattle({
+    playerLanes: [null, createCard('wolf'), null, null],
+  });
+
+  assert.equal(previewForTurn(0, 1, battle)[0].lane, 2);
+});
+
+test('blocked reinforcements flank only into adjacent lanes', () => {
+  const battle = createBattle({
+    opponentLanes: [createCard('stoat'), createCard('bullfrog'), null, null],
+  });
+
+  assert.equal(previewForTurn(0, 2, battle)[0].lane, 0);
 });

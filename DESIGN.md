@@ -80,7 +80,7 @@ Cat, Black Goat, Mantis, Adder, Raven, River Snapper, Grizzly, Rattler, Turkey V
 - **The Ossuary:** Bone bodies, defensive lanes, Airborne pressure, and Touch of Death.
 - **The Horned Crown:** mixed counters, multi-strike, and heavy finishers.
 
-All enemy placements follow deterministic six-turn scripts that repeat if a battle runs longer. Blocked incoming cards wait instead of replacing a surviving creature.
+All enemy placements follow deterministic sixteen-turn arcs. Incoming cards keep their authored lane while it remains legal. A blocked reinforcement deterministically flanks into the stronger adjacent open lane; without one, deployment fails rather than replacing a survivor.
 
 ## Deliberate simplifications
 

@@ -64,15 +64,15 @@ Public previews keep difficult waves strategic rather than surprising.
 
 ## Current balance evidence
 
-The deterministic production bot uses Scout, card play, Maneuver, and Mend. Its successful campaign currently resolves as:
+The deterministic production bot uses Scout, card play, Maneuver, and Mend. After adjacent-flank AI and pressure-curve tuning, its successful campaign currently resolves as:
 
-| Trial | Result | Turn | Final lead |
-|---|---:|---:|---:|
-| I | Domination | 12 | 30 |
-| II | Domination | 13 | 23 |
-| III | Regulation | 16 | 4 |
+| Trial | Turn-7 balance | Result | Turn | Final lead |
+|---|---:|---:|---:|---:|
+| I | Opponent by 3 | Regulation | 16 | Player by 1 |
+| II | Player by 4 | Regulation | 16 | Player by 18 |
+| III | Player by 2 | Regulation | 16 | Player by 8 |
 
-This creates a 41-round baseline. Trial III is intentionally close instead of relying on excessive creature stats.
+This creates a 48-round baseline. Every opponent contests the scale by turn seven, all three trials reach regulation, and the deterministic player policy remains capable of completing the run.
 
 ## Tuning guardrails
 
