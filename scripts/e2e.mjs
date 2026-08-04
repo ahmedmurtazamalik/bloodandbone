@@ -42,6 +42,8 @@ try {
   assert.match(openingAudio.musicSrc, /artifacts\/hamlet\.mp3$/);
   assert.equal(await page.locator('#ledgerPanel').isVisible(), true);
   assert.match(await page.locator('#turnLog').innerText(), /Turn 1[\s\S]*Woodsman takes the opposite seat[\s\S]*Incoming this turn/i);
+  assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 1);
+  assert.match(await page.locator('#turnLog').innerText(), /Marrow Reserve adds 1 Bone\. You have 1\./);
   assert.equal(await page.locator('#tutorialOverlay').isVisible(), true);
   assert.ok(await page.locator('.preview-card').count() >= 1);
   await page.screenshot({ path: 'artifacts/tutorial.png', fullPage: true });
@@ -59,8 +61,8 @@ try {
   await page.locator('#offerButton').click();
   await laneZero.click();
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().tutorial === 'explain-bones');
-  assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 1);
-  assert.equal(await page.locator('#bonePile .bone-token').count(), 1);
+  assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 2);
+  assert.equal(await page.locator('#bonePile .bone-token').count(), 2);
   const paymentLog = await page.locator('#turnLog').innerText();
   assert.match(paymentLog, /You offer Squirrel for 1 Blood and gain 1 Bone\./);
   assert.match(paymentLog, /You play Stoat in lane 1\./);

@@ -1,6 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createRun, completeBattle, chooseReward } from '../src/run.js';
+import { createRun, completeBattle, chooseReward, startingBonesForEncounter } from '../src/run.js';
+
+test('Marrow Reserve scales from one to three starting Bones across the trials', () => {
+  assert.equal(startingBonesForEncounter(0), 1);
+  assert.equal(startingBonesForEncounter(1), 2);
+  assert.equal(startingBonesForEncounter(2), 3);
+  assert.equal(startingBonesForEncounter(99), 3);
+});
 
 test('reward offers vary by run seed and do not repeat rejected cards in the next offer', () => {
   const firstReward = completeBattle(createRun({ rewardSeed: 11 }), true);

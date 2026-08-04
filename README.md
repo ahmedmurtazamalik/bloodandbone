@@ -68,7 +68,7 @@ The first turn uses the opening hand directly. On every later turn, choose exact
 4. For a Bone card, have enough Bones and select an empty lane.
 5. You may play multiple cards before ringing the bell.
 
-Blood is paid immediately and cannot be saved. Every friendly creature that actually dies gives one Bone. Bone cards spend that accumulated pool.
+Blood is paid immediately and cannot be saved. Every friendly creature that actually dies gives one Bone. Bone cards spend that accumulated pool. The **Marrow Reserve** starts trials I–III with 1, 2, and 3 Bones respectively, making low-cost Bone plays available early while expensive creatures still require deaths.
 
 ### Combat
 

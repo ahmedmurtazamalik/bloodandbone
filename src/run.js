@@ -8,6 +8,8 @@ export const ENCOUNTERS = Object.freeze([
 
 export const REWARD_POOL = Object.freeze(['cat','blackGoat','mantis','adder','raven','riverSnapper','grizzly','rattler','turkeyVulture','mantisGod']);
 
+export const startingBonesForEncounter = encounter => Math.min(3, Math.max(1, Number(encounter) + 1 || 1));
+
 function createRewardOffer(run, count = 3) {
   let available = REWARD_POOL.filter(key => !run.deck.includes(key) && !run.rewardHistory.includes(key));
   if (available.length < count) available = REWARD_POOL.filter(key => !run.deck.includes(key));

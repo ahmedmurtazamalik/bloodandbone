@@ -1,6 +1,6 @@
 import { CARD_LIBRARY, STARTER_DECK, createCard } from './cards.js';
 import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn } from './core.js';
-import { createRun, completeBattle, chooseReward, ENCOUNTERS } from './run.js';
+import { createRun, completeBattle, chooseReward, ENCOUNTERS, startingBonesForEncounter } from './run.js';
 import { previewForTurn, deployPreview } from './encounters.js';
 import { CARD_ART } from './illustrations.js';
 import { TutorialController, TUTORIAL_STEPS } from './tutorial.js';
@@ -87,10 +87,12 @@ function startBattle() {
     hand = [createCard('squirrel'), fairCard, ...deck.splice(0, 2)].filter(Boolean);
   }
   const sideDeck = Array.from({ length: 9 }, () => createCard('squirrel'));
-  battle = createBattle({ hand, deck, sideDeck, hasDrawn: true, turn: 1 });
+  const startingBones = startingBonesForEncounter(run.encounter);
+  battle = createBattle({ hand, deck, sideDeck, bones: startingBones, hasDrawn: true, turn: 1 });
   preview = previewForTurn(run.encounter, 1);
   ledger.clear(); renderedLogEntries = 0; ledger.beginTurn(1);
   ledger.add({ type: 'battle-start', encounterName: ENCOUNTERS[run.encounter].name, handNames: hand.map(card => card.name) });
+  ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: startingBones, total: startingBones });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   selectedId = null; sacrificeLanes = []; selectionStage = null; busy = false;
   scene = 'battle'; render();

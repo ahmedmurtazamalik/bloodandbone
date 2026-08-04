@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { CARD_LIBRARY, STARTER_DECK, createCard } from '../src/cards.js';
 import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn } from '../src/core.js';
 import { previewForTurn, deployPreview } from '../src/encounters.js';
+import { startingBonesForEncounter } from '../src/run.js';
 
 const bloodValue = card => card.sigils?.includes('worthy-sacrifice') ? 3 : 1;
 
@@ -14,6 +15,7 @@ function openingBattle(encounter) {
     hand: [createCard('squirrel'), fair, ...cards.splice(0, 2)],
     deck: cards,
     sideDeck: Array.from({ length: 9 }, () => createCard('squirrel')),
+    bones: startingBonesForEncounter(encounter),
     hasDrawn: true,
     turn: 1,
   });
