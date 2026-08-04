@@ -6,6 +6,7 @@ import { CARD_ART } from './illustrations.js';
 import { TutorialController, TUTORIAL_STEPS } from './tutorial.js';
 import { AudioDirector } from './audio.js';
 import { TurnLedger } from './turn-log.js';
+import { COMBAT_PACING, pacingForEvent } from './combat-pacing.js';
 
 const ui = Object.fromEntries([
   'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
@@ -37,8 +38,9 @@ const tutorial = new TutorialController();
 const audio = new AudioDirector();
 const ledger = new TurnLedger({ maxTurns: 8 });
 let renderedLogEntries = 0;
-
+const reducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+const pacingWait = ms => wait(reducedMotion ? Math.max(100, Math.round(ms * .3)) : ms);
 const sigilsOf = card => card?.sigils || [];
 const bloodValue = card => sigilsOf(card).includes('worthy-sacrifice') ? 3 : 1;
 
@@ -181,7 +183,10 @@ async function ringBell() {
   ui.bellButton.classList.add('ringing'); setTimeout(() => ui.bellButton.classList.remove('ringing'), 760);
   audio.playCue('bell');
   ledger.add({ type: 'combat-start', side: 'player' }); renderTurnLog();
-  let result = resolveCombat(battle, 'player'); battle = result.state; render(); await animateEvents(result.events, 'player');
+  await pacingWait(COMBAT_PACING.phaseLead);
+  let result = resolveCombat(battle, 'player');
+  await animateEvents(result.events, 'player');
+  battle = result.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
   if (result.winner) { finishBattle(result.winner === 'player'); return; }
   ledger.beginPhase('opponent');
   const opponentBeforeAge = battle.opponentLanes;
@@ -191,9 +196,12 @@ async function ringBell() {
   const entering = preview.find(entry => !deployed.blocked.includes(entry.lane));
   if (entering) { audio.playCue('place', .7); setTimeout(() => audio.playCreature(entering.card.key), 80); }
   if (deployed.blocked.length) showToast('AN INCOMING CREATURE WAITS BEHIND AN OCCUPIED LANE');
-  await wait(420);
+  await pacingWait(COMBAT_PACING.deployment);
   ledger.add({ type: 'combat-start', side: 'opponent' }); renderTurnLog();
-  result = resolveCombat(battle, 'opponent'); battle = result.state; render(); await animateEvents(result.events, 'opponent');
+  await pacingWait(COMBAT_PACING.phaseLead);
+  result = resolveCombat(battle, 'opponent');
+  await animateEvents(result.events, 'opponent');
+  battle = result.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
   if (result.winner) { finishBattle(result.winner === 'player'); return; }
   const playerBeforeAge = battle.playerLanes;
   const aged = ageCards(battle, 'player');
@@ -205,15 +213,30 @@ async function ringBell() {
 }
 
 async function animateEvents(events, side) {
-  if (!events.length) { ledger.addText(side === 'player' ? 'None of your creatures can attack.' : 'No opposing creature can attack.', 'combat'); renderTurnLog(); await wait(180); return; }
+  if (!events.length) {
+    ledger.addText(side === 'player' ? 'None of your creatures can attack.' : 'No opposing creature can attack.', 'combat');
+    renderTurnLog(); await pacingWait(COMBAT_PACING.emptyPhase); return;
+  }
   for (const event of events) {
+    const defendingRow = side === 'player' ? ui.opponentRow : ui.playerRow;
+    const attackingRow = side === 'player' ? ui.playerRow : ui.opponentRow;
+    const lane = defendingRow.children[event.lane];
+    const attackerLane = attackingRow.children[event.sourceLane ?? event.lane];
+    const timing = pacingForEvent(event, reducedMotion);
+    if (event.type !== 'death') attackerLane?.classList.add('attacking');
+    await wait(timing.windup);
     ledger.add(event); renderTurnLog();
-    const row = side === 'player' ? ui.opponentRow : ui.playerRow;
-    const lane = row.children[event.lane];
-    lane?.classList.add('flash'); ui.board.classList.add('impact');
+    attackerLane?.classList.remove('attacking'); lane?.classList.add('flash'); ui.board.classList.add('impact');
+    if (event.type === 'strike') {
+      const health = lane?.querySelector('.health');
+      if (health) health.textContent = event.healthRemaining;
+    }
+    if (event.type === 'death') lane?.classList.add('dying');
+    if (event.type === 'direct') renderScale(event.scaleAfter);
     if (event.type === 'direct') { audio.playCue('direct', side === 'player' ? .82 : 1.12); audio.playCue('scale', .75); }
-    else audio.playCue('hit');
-    await wait(150); lane?.classList.remove('flash'); ui.board.classList.remove('impact');
+    else audio.playCue(event.type === 'death' ? 'bones' : 'hit');
+    await wait(timing.hold);
+    lane?.classList.remove('flash'); lane?.classList.remove('dying'); ui.board.classList.remove('impact');
   }
 }
 
@@ -269,6 +292,14 @@ function laneHtml(card, lane, side, incoming = false) {
   return `<button class="lane ${side} ${selected ? 'sacrifice-selected' : ''} ${canTarget ? 'can-target' : ''}" data-lane="${lane}" aria-label="${side} lane ${lane + 1}">${card ? cardHtml(card, incoming ? 'preview-card' : '') : '<span class="empty-slot"></span>'}</button>`;
 }
 
+function renderScale(value) {
+  const clamped = Math.max(-5, Math.min(5, value));
+  ui.scaleBeam.style.setProperty('--tilt', `${clamped * 2.8}deg`);
+  ui.playerWeights.innerHTML = clamped > 0 ? '<i></i>'.repeat(clamped) : '';
+  ui.enemyWeights.innerHTML = clamped < 0 ? '<i></i>'.repeat(-clamped) : '';
+  ui.scaleReadout.textContent = clamped === 0 ? 'The balance is even' : `${clamped > 0 ? 'You lead' : 'They lead'} by ${Math.abs(clamped)}`;
+}
+
 function renderBattle() {
   const encounter = ENCOUNTERS[run.encounter];
   ui.trialLabel.textContent = `TRIAL ${['I','II','III'][run.encounter]} OF III`;
@@ -289,11 +320,7 @@ function renderBattle() {
   ui.phaseReadout.textContent = battle.hasDrawn ? 'Play cards or ring' : 'Choose one draw';
   const enemyPower = battle.opponentLanes.reduce((sum, card) => sum + (card?.power || 0), 0);
   ui.enemyPower.textContent = enemyPower ? `${enemyPower} Power on the felt` : 'No attackers on the felt';
-  const clamped = Math.max(-5, Math.min(5, battle.scale));
-  ui.scaleBeam.style.setProperty('--tilt', `${clamped * 2.8}deg`);
-  ui.playerWeights.innerHTML = clamped > 0 ? '<i></i>'.repeat(clamped) : '';
-  ui.enemyWeights.innerHTML = clamped < 0 ? '<i></i>'.repeat(-clamped) : '';
-  ui.scaleReadout.textContent = clamped === 0 ? 'The balance is even' : `${clamped > 0 ? 'You lead' : 'They lead'} by ${Math.abs(clamped)}`;
+  renderScale(battle.scale);
   ui.instruction.textContent = instructionText();
   const card = selectedCard();
   ui.actionTray.hidden = !card; ui.offerButton.hidden = !(card && selectionStage === 'sacrifice' && offeredBlood() >= card.cost.amount);

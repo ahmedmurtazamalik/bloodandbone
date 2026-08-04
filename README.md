@@ -39,6 +39,8 @@ The paper **Turn ledger** beside the hand explains the battle in chronological, 
 - Enemy deployments, failed deployments into occupied lanes, and quiet phases
 - Fledgling maturation, exhausted draw piles, trial victory, and defeat
 
+Combat playback is deliberately staged instead of applying the final board immediately. Each attacker winds up, impact updates the struck card's Health, deaths receive their own readable hold, and direct hits move the scale one event at a time before the board settles. Reduced-motion preferences shorten the physical motion and pauses without removing chronological event order.
+
 The ledger retains the latest eight turns, scrolls to each new event as it occurs, and can be collapsed. On tablet and mobile it moves below the hand rather than covering the felt or tutorial. Its DOM uses a live `role="log"` region, and the same structured entries are available through the query-gated debug snapshot for E2E verification.
 
 ## How to play

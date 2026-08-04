@@ -66,6 +66,12 @@ try {
   assert.match(paymentLog, /You play Stoat in lane 1\./);
   await page.locator('#tutorialContinue').click();
   await page.locator('#bellButton').click();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('#scaleReadout').innerText(), 'The balance is even');
+  assert.match(await page.locator('#turnLog').innerText(), /ring the bell/i);
+  await page.waitForFunction(() => document.querySelector('#turnLog')?.innerText.includes('Stoat attacks through open lane 1'));
+  assert.equal(await page.locator('#scaleReadout').innerText(), 'You lead by 1');
+  await page.screenshot({ path: 'artifacts/combat-playback.png', fullPage: true });
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().turn >= 2 && window.__BLOOD_BONE__.snapshot().tutorial === 'draw-squirrel');
   const combatLog = await page.locator('#turnLog').innerText();
   assert.match(combatLog, /You ring the bell\. Your creatures attack from left to right\./);
