@@ -83,6 +83,10 @@ Press **Ring the Bell** to end your action phase.
 
 Enemy cards in **Next Turn** are public information. Plan sacrifices and blockers around them.
 
+### Rewards
+
+Winning the first two trials offers three illustrated creatures. Offers are seeded per run, exclude cards already in your deck when possible, and remember all three presented choices so rejected cards do not immediately repeat at the next reward. Choose one; it joins your draw pile for the remaining trials.
+
 ## Included sigils
 
 - **Airborne** — bypasses an ordinary blocker for direct scale damage.

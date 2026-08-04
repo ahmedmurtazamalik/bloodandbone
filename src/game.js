@@ -26,7 +26,7 @@ const SIGILS = Object.freeze({
   'unkillable': ['∞', 'Unkillable', 'Returns to your hand at printed Health after it dies or is sacrificed.'],
   'stinky': ['−1', 'Stinky', 'Lowers the directly opposing attacker’s Power by one, to a minimum of zero.'],
 });
-const PLAYABLE_REWARDS = ['cat','blackGoat','mantis','adder','raven','riverSnapper','grizzly','rattler','turkeyVulture','mantisGod'];
+
 
 let scene = 'title';
 let run = null;
@@ -47,6 +47,9 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 const pacingWait = ms => wait(reducedMotion ? Math.max(100, Math.round(ms * .3)) : ms);
 const sigilsOf = card => card?.sigils || [];
 const bloodValue = card => sigilsOf(card).includes('worthy-sacrifice') ? 3 : 1;
+const newRewardSeed = () => globalThis.crypto?.getRandomValues
+  ? globalThis.crypto.getRandomValues(new Uint32Array(1))[0]
+  : Math.floor(Math.random() * 0xFFFFFFFF);
 
 function shuffle(cards) {
   const copy = [...cards];
@@ -65,7 +68,7 @@ function showToast(message) {
 function startRun(guided = false) {
   audio.unlock(); audio.startMusic().then(renderAudioControls); audio.playCue('ui');
   if (guided && !tutorial.active) tutorial.start();
-  run = createRun();
+  run = createRun({ rewardSeed: newRewardSeed() });
   startBattle();
 }
 
@@ -253,7 +256,7 @@ function finishBattle(won) {
   ledger.add({ type: won ? 'victory' : 'defeat', scale: battle.scale }); renderTurnLog();
   busy = false; run = completeBattle(run, won);
   if (run.phase === 'reward') {
-    scene = 'reward'; rewardKeys = rewardOptions();
+    scene = 'reward'; rewardKeys = [...run.rewardOptions];
   } else if (run.phase === 'victory') scene = 'victory';
   else scene = 'defeat';
   if (scene === 'reward') audio.playCue('reward');
@@ -262,11 +265,6 @@ function finishBattle(won) {
   render();
 }
 
-function rewardOptions() {
-  const available = PLAYABLE_REWARDS.filter(key => !run.deck.includes(key));
-  const source = available.length >= 3 ? available : PLAYABLE_REWARDS;
-  return shuffle(source).slice(0, 3);
-}
 
 function takeReward(key) {
   if (scene !== 'reward') return;

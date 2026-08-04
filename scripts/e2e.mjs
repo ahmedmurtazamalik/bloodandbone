@@ -136,10 +136,14 @@ try {
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
   assert.equal(await page.locator('.reward-card').count(), 3);
   assert.equal(await page.locator('.reward-card .portrait svg').count(), 3);
+  const firstRewardKeys = await page.locator('.reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
   await page.screenshot({ path: 'artifacts/reward.png', fullPage: true });
   await page.locator('.reward-card').first().click();
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().encounter === 1);
   await page.evaluate(() => window.__BLOOD_BONE__.winBattle());
+  await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
+  const secondRewardKeys = await page.locator('.reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
+  assert.equal(secondRewardKeys.some(key => firstRewardKeys.includes(key)), false);
   await page.locator('.reward-card').first().click();
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().encounter === 2);
   await page.evaluate(() => window.__BLOOD_BONE__.winBattle());
