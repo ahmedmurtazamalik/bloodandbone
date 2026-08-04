@@ -2,6 +2,14 @@
 
 **Scope:** Leshy's Cabin / base-game Act I, not Act II, Act III, or Kaycee's Mod. This is a mechanics reference for a polished local adaptation, not a content dump. Use original names only as internal research labels; create original art, icons, flavor text, UI, sound, and presentation.
 
+## Card-stat baseline audit
+
+The curated creature numbers were audited against publicly available Act I card definitions, including the open `inscrybe-with-friends` print registry at commit `fd6b1eba8d2623a42b1949dd34a805fcbbee4b7b`:
+
+- <https://github.com/Vap0r1ze/inscrybe-with-friends/blob/fd6b1eba8d2623a42b1949dd34a805fcbbee4b7b/lib/defs/prints.ts>
+
+The audit confirmed that Blood & Bone already uses the intended baseline for the cards called out in playtesting: Wolf costs 2 Blood and is 3/2; Black Goat is a 0/1 resource specialist with Worthy Sacrifice; Mantis and Mantis God are both fragile 1/1 creatures but use Bifurcated and Trifurcated Strike respectively. Balance work should change encounter pressure and resource access before casually rewriting these identity-defining bodies. Automated assertions in `tests/cards.test.js` protect these baselines.
+
 ## 1. Recommended adaptation scope
 
 ### Core/high-value — implement first
