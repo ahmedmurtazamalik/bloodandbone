@@ -231,6 +231,26 @@ test('touch of death kills a struck creature regardless of remaining health', ()
   assert.equal(result.state.opponentLanes[0], null);
 });
 
+test('Stinky lowers the Power of the directly opposing attacker to a minimum of zero', () => {
+  const wolf = createCard('wolf');
+  const stoat = createCard('stoat');
+  const skunk = createCard('skunk');
+
+  const weakened = resolveCombat(createBattle({ playerLanes: [wolf], opponentLanes: [skunk] }), 'player');
+  assert.equal(weakened.state.opponentLanes[0].health, 1);
+  assert.equal(weakened.state.playerLanes[0].power, 3, 'printed Power must not be mutated');
+  assert.deepEqual(weakened.events.map(event => event.type), ['stinky', 'strike']);
+  assert.deepEqual(
+    { sourceName: weakened.events[0].sourceName, attackerName: weakened.events[0].attackerName, powerBefore: weakened.events[0].powerBefore, powerAfter: weakened.events[0].powerAfter },
+    { sourceName: 'Skunk', attackerName: 'Wolf', powerBefore: 3, powerAfter: 2 },
+  );
+
+  const stopped = resolveCombat(createBattle({ playerLanes: [stoat], opponentLanes: [skunk] }), 'player');
+  assert.equal(stopped.state.opponentLanes[0].health, 3);
+  assert.deepEqual(stopped.events.map(event => event.type), ['stinky']);
+  assert.equal(stopped.events[0].powerAfter, 0);
+});
+
 test('fledgling creatures mature after surviving their side turn', () => {
   const battle = createBattle({ playerLanes: [{ id: 'cub', key: 'wolfCub', name: 'Wolf Cub', power: 1, health: 1, sigils: ['fledgling'] }] });
   const aged = ageCards(battle, 'player');

@@ -96,6 +96,7 @@ Enemy cards in **Next Turn** are public information. Plan sacrifices and blocker
 - **Rabbit Hole** — playing Warren creates a free 0/1 Rabbit in your hand, giving you another sacrifice or emergency blocker.
 - **Fecundity** — playing Field Mice adds one matching copy to your hand; the copy loses Fecundity to prevent an infinite loop.
 - **Unkillable** — when your creature dies in combat or as a sacrifice, it returns to your hand at printed Health; the death still produces a Bone.
+- **Stinky** — reduces the directly opposing creature's Power by 1 for its entire attack sequence, to a minimum of 0.
 
 Open **Rules & Sigils** in the game for a quick reference.
 

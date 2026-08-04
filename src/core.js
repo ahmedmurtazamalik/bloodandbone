@@ -109,6 +109,10 @@ export function resolveCombat(state, side = 'player') {
   for (let lane = 0; lane < LANES; lane += 1) {
     const attacker = attackers[lane];
     if (!attacker || attacker.power <= 0) continue;
+    const stinkySource = defenders[lane]?.sigils?.includes('stinky') ? defenders[lane] : null;
+    const attackPower = Math.max(0, attacker.power - (stinkySource ? 1 : 0));
+    if (stinkySource) events.push({ type: 'stinky', side, lane, sourceName: stinkySource.name, attackerName: attacker.name, powerBefore: attacker.power, powerAfter: attackPower });
+    if (attackPower <= 0) continue;
     const offsets = attacker.sigils?.includes('trifurcated') ? [-1, 0, 1]
       : attacker.sigils?.includes('bifurcated') ? [-1, 1] : [0];
     for (const offset of offsets) {
@@ -120,9 +124,9 @@ export function resolveCombat(state, side = 'player') {
         const defenderName = defender.name;
         const defenderKey = defender.key;
         const returning = defender.sigils?.includes('unkillable') ? reviveCard(defender) : null;
-        defender.health -= attacker.power;
+        defender.health -= attackPower;
         if (attacker.sigils?.includes('touch-of-death')) defender.health = 0;
-        events.push({ type: 'strike', side, lane: targetLane, sourceLane: lane, damage: attacker.power, attackerName: attacker.name, attackerKey: attacker.key, defenderName, defenderKey, healthRemaining: Math.max(0, defender.health), touchOfDeath: attacker.sigils?.includes('touch-of-death') || false });
+        events.push({ type: 'strike', side, lane: targetLane, sourceLane: lane, damage: attackPower, attackerName: attacker.name, attackerKey: attacker.key, defenderName, defenderKey, healthRemaining: Math.max(0, defender.health), touchOfDeath: attacker.sigils?.includes('touch-of-death') || false });
         if (defender.health <= 0) {
           defenders[targetLane] = null;
           if (side === 'opponent') next.bones += 1;
@@ -133,8 +137,8 @@ export function resolveCombat(state, side = 'player') {
           }
         }
       } else {
-        next.scale += side === 'player' ? attacker.power : -attacker.power;
-        events.push({ type: 'direct', side, lane: targetLane, sourceLane: lane, damage: attacker.power, attackerName: attacker.name, attackerKey: attacker.key, bypassedDefenderName: fliesOver ? defender?.name : null, scaleAfter: next.scale });
+        next.scale += side === 'player' ? attackPower : -attackPower;
+        events.push({ type: 'direct', side, lane: targetLane, sourceLane: lane, damage: attackPower, attackerName: attacker.name, attackerKey: attacker.key, bypassedDefenderName: fliesOver ? defender?.name : null, scaleAfter: next.scale });
       }
     }
   }
