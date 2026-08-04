@@ -7,6 +7,7 @@ import { TutorialController, TUTORIAL_STEPS } from './tutorial.js';
 import { AudioDirector } from './audio.js';
 import { TurnLedger } from './turn-log.js';
 import { COMBAT_PACING, pacingForEvent } from './combat-pacing.js';
+import { MATCH_RULES, judgeMatch } from './match-rules.js';
 
 const ui = Object.fromEntries([
   'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
@@ -199,7 +200,6 @@ async function ringBell() {
   let result = resolveCombat(battle, 'player');
   await animateEvents(result.events, 'player');
   battle = result.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
-  if (result.winner) { finishBattle(result.winner === 'player'); return; }
   ledger.beginPhase('opponent');
   const opponentBeforeAge = battle.opponentLanes;
   battle = ageCards(battle, 'opponent'); logMaturation(opponentBeforeAge, battle.opponentLanes, 'opponent');
@@ -214,7 +214,8 @@ async function ringBell() {
   result = resolveCombat(battle, 'opponent');
   await animateEvents(result.events, 'opponent');
   battle = result.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
-  if (result.winner) { finishBattle(result.winner === 'player'); return; }
+  const outcome = judgeMatch(battle);
+  if (outcome) { finishBattle(outcome.winner === 'player'); return; }
   const playerBeforeAge = battle.playerLanes;
   const aged = ageCards(battle, 'player');
   battle = beginPlayerTurn(aged); ledger.beginTurn(battle.turn); logMaturation(playerBeforeAge, battle.playerLanes, 'player');
@@ -305,8 +306,8 @@ function laneHtml(card, lane, side, incoming = false) {
 }
 
 function renderScale(value) {
-  const clamped = Math.max(-5, Math.min(5, value));
-  ui.scaleBeam.style.setProperty('--tilt', `${clamped * 2.8}deg`);
+  const clamped = Math.max(-MATCH_RULES.dominationMargin, Math.min(MATCH_RULES.dominationMargin, value));
+  ui.scaleBeam.style.setProperty('--tilt', `${clamped * 1.15}deg`);
   ui.playerWeights.innerHTML = clamped > 0 ? '<i></i>'.repeat(clamped) : '';
   ui.enemyWeights.innerHTML = clamped < 0 ? '<i></i>'.repeat(-clamped) : '';
   ui.scaleReadout.textContent = clamped === 0 ? 'The balance is even' : `${clamped > 0 ? 'You lead' : 'They lead'} by ${Math.abs(clamped)}`;
@@ -328,7 +329,7 @@ function renderBattle() {
   ui.bellButton.disabled = busy || !battle.hasDrawn;
   ui.bonesReadout.textContent = battle.bones;
   ui.bonePile.innerHTML = Array.from({ length: Math.min(10, battle.bones) }, (_, index) => `<i class="bone-token" style="--r:${-26 + (index * 17) % 55}deg;--x:${(index % 4) * 9}px;--y:${Math.floor(index / 4) * -7}px"></i>`).join('');
-  ui.turnReadout.textContent = `Turn ${battle.turn}`;
+  ui.turnReadout.textContent = battle.turn <= MATCH_RULES.regulationTurns ? `Turn ${battle.turn} / ${MATCH_RULES.regulationTurns}` : `Sudden death · ${battle.turn}`;
   ui.phaseReadout.textContent = battle.hasDrawn ? 'Play cards or ring' : 'Choose one draw';
   const enemyPower = battle.opponentLanes.reduce((sum, card) => sum + (card?.power || 0), 0);
   ui.enemyPower.textContent = enemyPower ? `${enemyPower} Power on the felt` : 'No attackers on the felt';

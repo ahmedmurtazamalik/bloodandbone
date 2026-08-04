@@ -3,6 +3,7 @@ import { CARD_LIBRARY, STARTER_DECK, createCard } from '../src/cards.js';
 import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn } from '../src/core.js';
 import { previewForTurn, deployPreview } from '../src/encounters.js';
 import { startingBonesForEncounter } from '../src/run.js';
+import { judgeMatch } from '../src/match-rules.js';
 
 const bloodValue = card => card.sigils?.includes('worthy-sacrifice') ? 3 : 1;
 
@@ -75,10 +76,10 @@ function simulate(encounter) {
     state = playGreedy(state, preview);
 
     let combat = resolveCombat(state, 'player'); state = combat.state;
-    if (combat.winner) return { winner: combat.winner, turn: state.turn, scale: state.scale };
     state = ageCards(state, 'opponent'); state = deployPreview(state, preview).state;
     combat = resolveCombat(state, 'opponent'); state = combat.state;
-    if (combat.winner) return { winner: combat.winner, turn: state.turn, scale: state.scale };
+    const outcome = judgeMatch(state);
+    if (outcome) return { winner: outcome.winner, reason: outcome.reason, turn: state.turn, scale: state.scale };
     state = beginPlayerTurn(ageCards(state, 'player'));
     preview = previewForTurn(encounter, state.turn);
   }

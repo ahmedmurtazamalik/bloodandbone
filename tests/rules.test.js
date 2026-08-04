@@ -12,8 +12,12 @@ test('rulebook explains card numbers, lane combat, and persistent damage', () =>
   assert.match(html, /left to right/i);
 });
 
-test('rulebook explains scale math and gives a worked exchange', () => {
-  assert.match(html, /five points ahead/i);
+test('rulebook explains the full-round twelve-turn contest and special targeting', () => {
+  assert.match(html, /opponent.*repl(?:y|ies).*before.*judg/is);
+  assert.match(html, /cannot end before turn 8/i);
+  assert.match(html, /12-point lead.*domination/i);
+  assert.match(html, /turn 12.*leader wins/is);
+  assert.match(html, /tie.*sudden death/is);
   assert.match(html, /3 Power.*1 Power.*lead by 2/is);
   assert.match(html, /Bifurcated.*diagonal/is);
   assert.match(html, /Airborne.*flies over/is);

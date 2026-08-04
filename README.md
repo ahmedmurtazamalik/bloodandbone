@@ -1,6 +1,6 @@
 # BLOOD & BONE
 
-A compact local browser card battler based on the self-contained tabletop mechanics of *Inscryption* Act I: sacrifices, Bones, four combat lanes, a shared damage scale, face-up enemy intent, creature stats, and sigils.
+A strategic local browser card battler built around sacrifices, Bones, four combat lanes, a shared damage scale, face-up enemy intent, creature stats, and sigils. Its original twelve-turn contest structure is designed for longer matches with an opening, midgame, and endgame.
 
 This project contains **only the card-game loop**. It does not reproduce the cabin, story, puzzles, characters, map, later acts, original art, or original audio.
 
@@ -81,7 +81,9 @@ Press **Ring the Bell** to end your action phase.
 3. If no valid blocker exists, its Power tips the scale directly.
 4. Telegraph cards descend into open enemy lanes.
 5. Enemy creatures attack from lane 1 to lane 4.
-6. Lead the shared scale by five to win the trial.
+6. The opponent always answers before the round is judged.
+7. Trials cannot end before turn 8. From turn 8 onward, lead by 12 to win by domination.
+8. If nobody dominates, the turn-12 leader wins regulation; ties continue into sudden death.
 
 Enemy cards in **Next Turn** are public information. Plan sacrifices and blockers around them.
 
