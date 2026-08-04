@@ -12,6 +12,12 @@ const rabbitFrom = source => ({
   tribe: null,
   rarity: 'token',
 });
+const fecundityCopyFrom = source => ({
+  ...cloneCard(source),
+  id: `fecundity-copy-${source.id}`,
+  cost: { ...source.cost },
+  sigils: (source.sigils || []).filter(sigil => sigil !== 'fecundity'),
+});
 
 export function createBattle(overrides = {}) {
   return {
@@ -69,6 +75,10 @@ export function playCard(state, cardId, lane, sacrificeLanes = []) {
   if (card.sigils?.includes('rabbit-hole')) {
     next.hand.push(rabbitFrom(card));
     events.push({ type: 'create-hand', sourceName: card.name, cardName: 'Rabbit' });
+  }
+  if (card.sigils?.includes('fecundity')) {
+    next.hand.push(fecundityCopyFrom(card));
+    events.push({ type: 'fecundity', cardName: card.name });
   }
   return { ok: true, state: next, events };
 }

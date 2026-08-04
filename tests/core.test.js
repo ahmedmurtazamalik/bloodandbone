@@ -50,6 +50,22 @@ test('Rabbit Hole adds one free Rabbit to hand when Warren is played', () => {
   assert.deepEqual(result.events, [{ type: 'create-hand', sourceName: 'Warren', cardName: 'Rabbit' }]);
 });
 
+test('Fecundity creates one non-replicating copy of Field Mice in hand', () => {
+  const fieldMice = createCard('fieldMice');
+  const squirrels = [createCard('squirrel'), createCard('squirrel')];
+  const result = playCard(createBattle({ hand: [fieldMice], playerLanes: [squirrels[0], squirrels[1]] }), fieldMice.id, 2, [0, 1]);
+
+  assert.equal(result.ok, true);
+  assert.equal(result.state.hand.length, 1);
+  const copy = result.state.hand[0];
+  assert.deepEqual(
+    { key: copy.key, cost: copy.cost, power: copy.power, health: copy.health },
+    { key: 'fieldMice', cost: { type: 'blood', amount: 2 }, power: 2, health: 2 },
+  );
+  assert.equal(copy.sigils.includes('fecundity'), false);
+  assert.deepEqual(result.events, [{ type: 'fecundity', cardName: 'Field Mice' }]);
+});
+
 test('failed resource payments do not mutate the battle', () => {
   const battle = createBattle({
     hand: [{ id: 'vulture', name: 'Turkey Vulture', cost: { type: 'bones', amount: 8 }, power: 3, health: 3 }],

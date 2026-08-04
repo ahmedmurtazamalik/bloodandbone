@@ -94,6 +94,7 @@ Enemy cards in **Next Turn** are public information. Plan sacrifices and blocker
 - **Trifurcated Strike** — attacks left, forward, and right.
 - **Fledgling** — matures at the beginning of its owner's next turn.
 - **Rabbit Hole** — playing Warren creates a free 0/1 Rabbit in your hand, giving you another sacrifice or emergency blocker.
+- **Fecundity** — playing Field Mice adds one matching copy to your hand; the copy loses Fecundity to prevent an infinite loop.
 
 Open **Rules & Sigils** in the game for a quick reference.
 

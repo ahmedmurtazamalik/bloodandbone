@@ -27,6 +27,7 @@ export function describeEvent(event) {
     case 'blocked-deploy': return `${event.cardName} cannot enter occupied lane ${event.lane + 1}; deployment fails.`;
     case 'mature': return `${event.side === 'player' ? 'Your' : 'The opponent’s'} ${event.beforeName} matures into ${event.afterName} in lane ${event.lane + 1}.`;
     case 'create-hand': return `${event.sourceName} opens a Rabbit Hole and adds ${event.cardName} to your hand.`;
+    case 'fecundity': return `${event.cardName} creates one copy in your hand. The copy cannot replicate again.`;
     case 'bones': return `${event.reason} ${event.amount > 0 ? 'adds' : 'spends'} ${plural(Math.abs(event.amount), 'Bone')}. You have ${event.total}.`;
     case 'turn-ready': return event.drawRequired ? 'Choose either the creature deck or the Squirrel deck to begin your turn.' : 'Both draw piles are empty, so you may play or ring the bell immediately.';
     case 'victory': return `You win the trial with the scale at ${event.scale}.`;
