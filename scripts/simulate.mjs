@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { CARD_LIBRARY, STARTER_DECK, createCard } from '../src/cards.js';
-import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, scoutDeck, chooseScoutedCard } from '../src/core.js';
+import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, scoutDeck, chooseScoutedCard, maneuverCreature, mendCreature } from '../src/core.js';
 import { previewForTurn, deployPreview } from '../src/encounters.js';
 import { startingBonesForEncounter } from '../src/run.js';
 import { judgeMatch } from '../src/match-rules.js';
@@ -63,6 +63,27 @@ function playGreedy(state, preview) {
   return next;
 }
 
+function useTactic(state, preview) {
+  const threats = [...preview].sort((a, b) => b.card.power - a.card.power);
+  for (const threat of threats) {
+    if (state.playerLanes[threat.lane]) continue;
+    for (const fromLane of [threat.lane - 1, threat.lane + 1]) {
+      if (!state.playerLanes[fromLane]) continue;
+      const moved = maneuverCreature(state, fromLane, threat.lane);
+      if (moved.ok) return moved.state;
+    }
+  }
+  const woundedLane = state.playerLanes
+    .map((card, lane) => ({ card, lane }))
+    .filter(({ card }) => card && card.health < card.maxHealth)
+    .sort((a, b) => b.card.power - a.card.power)[0]?.lane;
+  if (woundedLane != null && state.bones >= 2) {
+    const mended = mendCreature(state, woundedLane);
+    if (mended.ok) return mended.state;
+  }
+  return state;
+}
+
 function simulate(encounter) {
   let state = openingBattle(encounter);
   let preview = previewForTurn(encounter, 1);
@@ -80,6 +101,7 @@ function simulate(encounter) {
       else if (!state.deck.length && !state.sideDeck.length) state.hasDrawn = true;
     }
     state = playGreedy(state, preview);
+    state = useTactic(state, preview);
 
     let combat = resolveCombat(state, 'player'); state = combat.state;
     state = ageCards(state, 'opponent'); state = deployPreview(state, preview).state;

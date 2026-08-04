@@ -1,7 +1,7 @@
 export const MATCH_RULES = Object.freeze({
-  minimumTurns: 8,
-  regulationTurns: 12,
-  dominationMargin: 12,
+  minimumTurns: 12,
+  regulationTurns: 16,
+  dominationMargin: 20,
 });
 
 export function judgeMatch({ turn, scale }) {

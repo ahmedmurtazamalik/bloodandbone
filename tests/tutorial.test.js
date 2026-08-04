@@ -39,6 +39,13 @@ test('a first-time tutorial gates the real action sequence', () => {
   assert.equal(tutorial.isCompleted(), true);
 });
 
+test('guided hand teaches Scout and the sixteen-turn contest', () => {
+  const drawStep = TUTORIAL_STEPS.find(step => step.id === 'draw-squirrel');
+  const completeStep = TUTORIAL_STEPS.find(step => step.id === 'complete');
+  assert.match(drawStep.copy, /Scout three creatures and choose one/i);
+  assert.match(completeStep.copy, /sixteen-turn contest/i);
+});
+
 test('skip persists and replay clears completion before restarting', () => {
   const storage = memoryStorage();
   const tutorial = new TutorialController(storage);

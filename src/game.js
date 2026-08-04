@@ -358,10 +358,10 @@ function laneHtml(card, lane, side, incoming = false) {
 
 function renderScale(value) {
   const clamped = Math.max(-MATCH_RULES.dominationMargin, Math.min(MATCH_RULES.dominationMargin, value));
-  ui.scaleBeam.style.setProperty('--tilt', `${clamped * 1.15}deg`);
-  ui.playerWeights.innerHTML = clamped > 0 ? '<i></i>'.repeat(clamped) : '';
-  ui.enemyWeights.innerHTML = clamped < 0 ? '<i></i>'.repeat(-clamped) : '';
-  ui.scaleReadout.textContent = clamped === 0 ? 'The balance is even' : `${clamped > 0 ? 'You lead' : 'They lead'} by ${Math.abs(clamped)}`;
+  ui.scaleBeam.style.setProperty('--tilt', `${(clamped / MATCH_RULES.dominationMargin) * 14}deg`);
+  ui.playerWeights.innerHTML = clamped > 0 ? '<i></i>'.repeat(Math.min(10, clamped)) : '';
+  ui.enemyWeights.innerHTML = clamped < 0 ? '<i></i>'.repeat(Math.min(10, -clamped)) : '';
+  ui.scaleReadout.textContent = value === 0 ? 'The balance is even' : `${value > 0 ? 'You lead' : 'They lead'} by ${Math.abs(value)}`;
 }
 
 function renderBattle() {

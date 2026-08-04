@@ -10,8 +10,8 @@ export const TUTORIAL_STEPS = Object.freeze([
   Object.freeze({ id: 'place-stoat', action: 'place-lane', target: 0, title: 'Replace sacrifice with strength', copy: 'Place Stoat into the same lane. The Squirrel dies, and you gain one Bone.', spotlight: '.lane.player[data-lane="0"]' }),
   Object.freeze({ id: 'explain-bones', action: 'continue', title: 'Death leaves Bones', copy: 'Your Bone pile increased. Bone-cost cards spend this reserve without sacrifices.', spotlight: '#boneReserve' }),
   Object.freeze({ id: 'ring-bell', action: 'ring-bell', title: 'Resolve the lanes', copy: 'Ring the brass bell. Your creatures attack first; unblocked Power tips the balance.', spotlight: '#bellButton' }),
-  Object.freeze({ id: 'draw-squirrel', action: 'draw', target: 'side', title: 'Choose every later draw', copy: 'A new turn begins. Draw a dependable Squirrel; the other pile gives an unknown creature.', spotlight: '#sideDeck' }),
-  Object.freeze({ id: 'complete', action: 'continue', title: 'The table is yours', copy: 'Read the incoming row, build toward five scale damage, and use the Rules book whenever a sigil is unfamiliar.', spotlight: '#board' }),
+  Object.freeze({ id: 'draw-squirrel', action: 'draw', target: 'side', title: 'Choose every later draw', copy: 'A new turn begins. Draw a dependable Squirrel, or Scout three creatures and choose one.', spotlight: '#sideDeck' }),
+  Object.freeze({ id: 'complete', action: 'continue', title: 'The table is yours', copy: 'Read incoming threats, build your scale lead through the sixteen-turn contest, and use the Rules book whenever a sigil is unfamiliar.', spotlight: '#board' }),
 ]);
 
 export class TutorialController {
