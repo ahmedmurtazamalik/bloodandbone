@@ -67,6 +67,45 @@ test('combat resolves lanes left-to-right and open lanes tip the scale', () => {
   assert.deepEqual(result.events.map(event => event.type), ['strike', 'death', 'direct']);
 });
 
+test('outer-lane creatures retain repeated damage and die at zero health', () => {
+  for (const lane of [0, 3]) {
+    let battle = createBattle({
+      playerLanes: Array.from({ length: 4 }, (_, index) => index === lane
+        ? { id: `attacker-${lane}`, name: 'Attacker', power: 1, health: 3 }
+        : null),
+      opponentLanes: Array.from({ length: 4 }, (_, index) => index === lane
+        ? { id: `defender-${lane}`, name: 'Defender', power: 0, health: 3 }
+        : null),
+    });
+
+    battle = resolveCombat(battle, 'player').state;
+    assert.equal(battle.opponentLanes[lane].health, 2);
+    battle = resolveCombat(battle, 'player').state;
+    assert.equal(battle.opponentLanes[lane].health, 1);
+    const lethal = resolveCombat(battle, 'player');
+    assert.equal(lethal.state.opponentLanes[lane], null);
+    assert.deepEqual(lethal.events.map(event => event.type), ['strike', 'death']);
+  }
+});
+
+test('bifurcated strikes can kill creatures in either outer lane', () => {
+  for (const [attackerLane, defenderLane] of [[1, 0], [2, 3]]) {
+    let battle = createBattle({
+      playerLanes: Array.from({ length: 4 }, (_, index) => index === attackerLane
+        ? { id: `mantis-${attackerLane}`, name: 'Mantis', power: 1, health: 1, sigils: ['bifurcated'] }
+        : null),
+      opponentLanes: Array.from({ length: 4 }, (_, index) => index === defenderLane
+        ? { id: `defender-${defenderLane}`, name: 'Defender', power: 0, health: 2 }
+        : null),
+    });
+
+    battle = resolveCombat(battle, 'player').state;
+    assert.equal(battle.opponentLanes[defenderLane].health, 1);
+    battle = resolveCombat(battle, 'player').state;
+    assert.equal(battle.opponentLanes[defenderLane], null);
+  }
+});
+
 test('worthy sacrifice provides three blood and many lives survives payment', () => {
   const battle = createBattle({
     hand: [{ id: 'urayuli', name: 'Urayuli', cost: { type: 'blood', amount: 4 }, power: 7, health: 7 }],
