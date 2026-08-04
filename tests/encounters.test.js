@@ -5,14 +5,19 @@ import { createBattle } from '../src/core.js';
 
 test('every encounter script uses legal cards and lanes while allowing breathing turns', () => {
   for (let encounter = 0; encounter < ENCOUNTER_SCRIPTS.length; encounter += 1) {
+    assert.ok(ENCOUNTER_SCRIPTS[encounter].length >= 8, `encounter ${encounter + 1} needs eight authored turns`);
     let totalThreats = 0;
-    for (let turn = 1; turn <= 8; turn += 1) {
+    let defensiveCreatures = 0;
+    for (let turn = 1; turn <= ENCOUNTER_SCRIPTS[encounter].length; turn += 1) {
       const preview = previewForTurn(encounter, turn);
       totalThreats += preview.length;
+      defensiveCreatures += preview.filter(entry => entry.card.power <= 1 && entry.card.health >= 3).length;
       assert.ok(preview.every(entry => entry.lane >= 0 && entry.lane < 4));
       assert.ok(preview.every(entry => entry.card.name && Number.isFinite(entry.card.power)));
     }
-    assert.ok(totalThreats >= 4);
+    assert.ok(totalThreats >= 6);
+    assert.ok(defensiveCreatures >= 2, `encounter ${encounter + 1} needs two durable blockers`);
+    assert.ok(ENCOUNTER_SCRIPTS[encounter].some(row => row.length === 0), `encounter ${encounter + 1} needs a breathing turn`);
   }
 });
 

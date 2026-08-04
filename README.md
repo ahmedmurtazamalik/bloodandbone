@@ -83,6 +83,8 @@ Press **Ring the Bell** to end your action phase.
 
 Enemy cards in **Next Turn** are public information. Plan sacrifices and blockers around them.
 
+Each opponent follows an eight-turn authored cadence that alternates durable blockers, pressure cards, lane reinforcements, and explicit breathing turns. Reinforcements often contest an occupied lane instead of filling all four lanes immediately, preserving choices between racing the scale, trading creatures, and preparing a later defense.
+
 ### Rewards
 
 Winning the first two trials offers three illustrated creatures. Offers are seeded per run, exclude cards already in your deck when possible, and remember all three presented choices so rejected cards do not immediately repeat at the next reward. Choose one; it joins your draw pile for the remaining trials.
