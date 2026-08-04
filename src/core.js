@@ -191,5 +191,5 @@ export function resolveCombat(state, side = 'player') {
       }
     }
   }
-  return { state: next, events, winner: next.scale >= 5 ? 'player' : next.scale <= -5 ? 'opponent' : null };
+  return { state: next, events };
 }

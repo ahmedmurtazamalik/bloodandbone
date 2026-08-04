@@ -1,13 +1,14 @@
 import { CARD_LIBRARY, STARTER_DECK, createCard } from './cards.js';
-import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, maneuverCreature, mendCreature, scoutDeck, chooseScoutedCard } from './core.js';
+import { createBattle, drawCard, playCard, maneuverCreature, mendCreature, scoutDeck, chooseScoutedCard } from './core.js';
 import { createRun, completeBattle, chooseReward, retryBattle, ENCOUNTERS, startingBonesForEncounter, startingBonesForRun } from './run.js';
-import { previewForTurn, deployPreview } from './encounters.js';
+import { previewForTurn } from './encounters.js';
 import { CARD_ART } from './illustrations.js';
 import { TutorialController, TUTORIAL_STEPS } from './tutorial.js';
 import { AudioDirector } from './audio.js';
 import { TurnLedger } from './turn-log.js';
 import { COMBAT_PACING, pacingForEvent } from './combat-pacing.js';
-import { MATCH_RULES, judgeMatch } from './match-rules.js';
+import { MATCH_RULES } from './match-rules.js';
+import { advanceRound } from './round-coordinator.js';
 
 const ui = Object.fromEntries([
   'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
@@ -228,15 +229,6 @@ function lockOffering() {
   selectionStage = 'place'; audio.playCue('ui'); render();
 }
 
-function logMaturation(beforeLanes, afterLanes, side) {
-  beforeLanes.forEach((before, lane) => {
-    const after = afterLanes[lane];
-    if (before?.sigils?.includes('fledgling') && after && !after.sigils?.includes('fledgling')) {
-      ledger.add({ type: 'mature', beforeName: before.name, afterName: after.name, lane, side });
-    }
-  });
-}
-
 async function ringBell() {
   if (busy || !battle.hasDrawn) { showToast('DRAW BEFORE ENDING THE TURN'); return; }
   if (!tutorialAllows('ring-bell')) return;
@@ -244,30 +236,42 @@ async function ringBell() {
   busy = true; selectedId = null; sacrificeLanes = []; selectionStage = null; render();
   ui.bellButton.classList.add('ringing'); setTimeout(() => ui.bellButton.classList.remove('ringing'), 760);
   audio.playCue('bell');
-  ledger.add({ type: 'combat-start', side: 'player' }); renderTurnLog();
+
+  const resolvedRound = advanceRound(battle, preview);
+  const phase = type => resolvedRound.phases.find(entry => entry.type === type);
+  const playerCombat = phase('player-combat');
+  const opponentMaturation = phase('opponent-maturation');
+  const deployment = phase('opponent-deployment');
+  const opponentCombat = phase('opponent-combat');
+
+  playerCombat.events.filter(event => event.type === 'combat-start').forEach(event => ledger.add(event));
+  renderTurnLog();
   await pacingWait(COMBAT_PACING.phaseLead);
-  let result = resolveCombat(battle, 'player');
-  await animateEvents(result.events, 'player');
-  battle = result.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
+  await animateEvents(playerCombat.events.filter(event => event.type !== 'combat-start'), 'player');
+  battle = playerCombat.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
+
   ledger.beginPhase('opponent');
-  const opponentBeforeAge = battle.opponentLanes;
-  battle = ageCards(battle, 'opponent'); logMaturation(opponentBeforeAge, battle.opponentLanes, 'opponent');
-  const deployed = deployPreview(battle, preview); battle = deployed.state; render();
-  preview.forEach(entry => ledger.add({ type: deployed.blocked.includes(entry.lane) ? 'blocked-deploy' : 'deploy', cardName: entry.card.name, lane: entry.lane }));
-  const entering = preview.find(entry => !deployed.blocked.includes(entry.lane));
+  battle = opponentMaturation.state;
+  opponentMaturation.events.forEach(event => ledger.add(event));
+  battle = deployment.state; render();
+  deployment.events.forEach(event => ledger.add(event));
+  const entering = preview.find(entry => !resolvedRound.blockedDeployments.includes(entry.lane));
   if (entering) { audio.playCue('place', .7); setTimeout(() => audio.playCreature(entering.card.key), 80); }
-  if (deployed.blocked.length) showToast('AN INCOMING CREATURE WAITS BEHIND AN OCCUPIED LANE');
+  if (resolvedRound.blockedDeployments.length) showToast('AN INCOMING CREATURE WAITS BEHIND AN OCCUPIED LANE');
   await pacingWait(COMBAT_PACING.deployment);
-  ledger.add({ type: 'combat-start', side: 'opponent' }); renderTurnLog();
+
+  opponentCombat.events.filter(event => event.type === 'combat-start').forEach(event => ledger.add(event));
+  renderTurnLog();
   await pacingWait(COMBAT_PACING.phaseLead);
-  result = resolveCombat(battle, 'opponent');
-  await animateEvents(result.events, 'opponent');
-  battle = result.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
-  const outcome = judgeMatch(battle);
-  if (outcome) { finishBattle(outcome.winner === 'player'); return; }
-  const playerBeforeAge = battle.playerLanes;
-  const aged = ageCards(battle, 'player');
-  battle = beginPlayerTurn(aged); ledger.beginTurn(battle.turn); logMaturation(playerBeforeAge, battle.playerLanes, 'player');
+  await animateEvents(opponentCombat.events.filter(event => event.type !== 'combat-start'), 'opponent');
+  battle = opponentCombat.state; render(); await pacingWait(COMBAT_PACING.scoreSettle);
+
+  if (resolvedRound.outcome) { finishBattle(resolvedRound.outcome.winner === 'player'); return; }
+
+  const playerMaturation = phase('player-maturation');
+  playerMaturation.events.forEach(event => ledger.add(event));
+  battle = phase('turn-start').state;
+  ledger.beginTurn(battle.turn);
   preview = previewForTurn(run.encounter, battle.turn);
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   ledger.add({ type: 'turn-ready', drawRequired: !battle.hasDrawn });

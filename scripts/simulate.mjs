@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { CARD_LIBRARY, STARTER_DECK, createCard } from '../src/cards.js';
-import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, scoutDeck, chooseScoutedCard, maneuverCreature, mendCreature } from '../src/core.js';
-import { previewForTurn, deployPreview } from '../src/encounters.js';
+import { createBattle, drawCard, playCard, scoutDeck, chooseScoutedCard, maneuverCreature, mendCreature } from '../src/core.js';
+import { previewForTurn } from '../src/encounters.js';
 import { startingBonesForEncounter } from '../src/run.js';
-import { judgeMatch } from '../src/match-rules.js';
+import { advanceRound } from '../src/round-coordinator.js';
 
 const bloodValue = card => card.sigils?.includes('worthy-sacrifice') ? 3 : 1;
 
@@ -103,12 +103,14 @@ function simulate(encounter) {
     state = playGreedy(state, preview);
     state = useTactic(state, preview);
 
-    let combat = resolveCombat(state, 'player'); state = combat.state;
-    state = ageCards(state, 'opponent'); state = deployPreview(state, preview).state;
-    combat = resolveCombat(state, 'opponent'); state = combat.state;
-    const outcome = judgeMatch(state);
-    if (outcome) return { winner: outcome.winner, reason: outcome.reason, turn: state.turn, scale: state.scale };
-    state = beginPlayerTurn(ageCards(state, 'player'));
+    const resolvedRound = advanceRound(state, preview);
+    state = resolvedRound.nextState;
+    if (resolvedRound.outcome) return {
+      winner: resolvedRound.outcome.winner,
+      reason: resolvedRound.outcome.reason,
+      turn: resolvedRound.settledState.turn,
+      scale: resolvedRound.settledState.scale,
+    };
     preview = previewForTurn(encounter, state.turn);
   }
   return { winner: null, turn: state.turn, scale: state.scale };

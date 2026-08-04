@@ -313,3 +313,13 @@ test('scouting reveals three creatures and keeps exactly one while cycling the r
   assert.equal(chosen.state.hasDrawn, true);
   assert.equal(chooseScoutedCard(battle, cards[3].id).reason, 'NOT_SCOUTED');
 });
+
+test('combat resolution reports mechanics but never adjudicates the match', () => {
+  const battle = createBattle({
+    scale: 19,
+    playerLanes: [createCard('wolf'), null, null, null],
+  });
+  const result = resolveCombat(battle, 'player');
+  assert.equal(result.state.scale, 22);
+  assert.equal(Object.hasOwn(result, 'winner'), false);
+});
