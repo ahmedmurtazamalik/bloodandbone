@@ -1,5 +1,5 @@
 import { CARD_LIBRARY, STARTER_DECK, createCard } from './cards.js';
-import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn } from './core.js';
+import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, maneuverCreature, mendCreature } from './core.js';
 import { createRun, completeBattle, chooseReward, retryBattle, ENCOUNTERS, startingBonesForEncounter, startingBonesForRun } from './run.js';
 import { previewForTurn, deployPreview } from './encounters.js';
 import { CARD_ART } from './illustrations.js';
@@ -10,7 +10,7 @@ import { COMBAT_PACING, pacingForEvent } from './combat-pacing.js';
 import { MATCH_RULES, judgeMatch } from './match-rules.js';
 
 const ui = Object.fromEntries([
-  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
+  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
 ].map(id => [id, document.getElementById(id)]));
 
 const SIGILS = Object.freeze({
@@ -37,6 +37,8 @@ let rewardKeys = [];
 let selectedId = null;
 let sacrificeLanes = [];
 let selectionStage = null;
+let tacticMode = null;
+let tacticSourceLane = null;
 let busy = false;
 let toastTimer = null;
 const tutorial = new TutorialController();
@@ -97,7 +99,7 @@ function startBattle() {
   ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: marrowBones, total: marrowBones });
   if (run.losses) ledger.add({ type: 'bones', reason: 'Broken Bones', amount: 2, total: startingBones, pluralSource: true });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
-  selectedId = null; sacrificeLanes = []; selectionStage = null; busy = false;
+  selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; busy = false;
   scene = 'battle'; render();
 }
 
@@ -127,18 +129,33 @@ function selectCard(cardId) {
   const card = battle.hand.find(item => item.id === cardId); if (!card) return;
   if (!tutorialAllows('select-card', card.key)) return;
   if (selectedId === cardId) { clearSelection(); return; }
-  selectedId = cardId; sacrificeLanes = [];
+  selectedId = cardId; sacrificeLanes = []; tacticMode = null; tacticSourceLane = null;
   selectionStage = card.cost.type === 'blood' && card.cost.amount > 0 ? 'sacrifice' : 'place';
   advanceTutorial('select-card', card.key); audio.playCue('select'); render();
 }
 
-function clearSelection() { selectedId = null; sacrificeLanes = []; selectionStage = null; render(); }
+function clearSelection() { selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; render(); }
 
 function selectedCard() { return battle?.hand.find(card => card.id === selectedId) || null; }
 function offeredBlood() { return sacrificeLanes.reduce((sum, lane) => sum + bloodValue(battle.playerLanes[lane]), 0); }
 
 function laneClick(lane) {
-  if (busy || !selectedId) return;
+  if (busy) return;
+  if (tacticMode === 'maneuver') {
+    if (tacticSourceLane == null) {
+      if (!battle.playerLanes[lane]) { showToast('CHOOSE ONE OF YOUR CREATURES'); return; }
+      tacticSourceLane = lane; audio.playCue('select'); render(); return;
+    }
+    const result = maneuverCreature(battle, tacticSourceLane, lane);
+    if (!result.ok) { showToast(result.reason.replaceAll('_', ' ')); audio.playCue('invalid'); return; }
+    battle = result.state; ledger.add(result.event); audio.playCue('place'); clearSelection(); return;
+  }
+  if (tacticMode === 'mend') {
+    const result = mendCreature(battle, lane);
+    if (!result.ok) { showToast(result.reason.replaceAll('_', ' ')); audio.playCue('invalid'); return; }
+    battle = result.state; ledger.add(result.event); audio.playCue('bones'); clearSelection(); return;
+  }
+  if (!selectedId) return;
   const card = selectedCard(); if (!card) return;
   if (selectionStage === 'sacrifice') {
     if (!battle.playerLanes[lane]) { showToast('ONLY CREATURES CAN BE OFFERED'); return; }
@@ -170,6 +187,15 @@ function laneClick(lane) {
   if (battle.bones > previousBones) setTimeout(() => audio.playCue('boneGain'), 90);
   setTimeout(() => { audio.playCue('place'); audio.playCreature(card.key); }, usedSacrifice ? 130 : 0);
   clearSelection();
+}
+
+function chooseTactic(mode) {
+  if (busy || scene !== 'battle' || tutorial.active) return;
+  if (battle.tacticUsed) { showToast('TACTIC ALREADY USED THIS TURN'); audio.playCue('invalid'); return; }
+  selectedId = null; sacrificeLanes = []; selectionStage = null;
+  tacticMode = tacticMode === mode ? null : mode;
+  tacticSourceLane = null;
+  audio.playCue('select'); render();
 }
 
 function lockOffering() {
@@ -300,8 +326,10 @@ function cardHtml(card, classes = '') {
 }
 
 function laneHtml(card, lane, side, incoming = false) {
-  const selected = side === 'player' && sacrificeLanes.includes(lane);
-  const canTarget = side === 'player' && selectedId && (selectionStage === 'sacrifice' ? Boolean(card) : (!card || selected));
+  const selected = side === 'player' && (sacrificeLanes.includes(lane) || tacticSourceLane === lane);
+  const tacticTarget = tacticMode === 'maneuver' ? (tacticSourceLane == null ? Boolean(card) : !card && Math.abs(tacticSourceLane - lane) === 1)
+    : tacticMode === 'mend' ? Boolean(card) : false;
+  const canTarget = side === 'player' && (tacticTarget || (selectedId && (selectionStage === 'sacrifice' ? Boolean(card) : (!card || selected))));
   return `<button class="lane ${side} ${selected ? 'sacrifice-selected' : ''} ${canTarget ? 'can-target' : ''}" data-lane="${lane}" aria-label="${side} lane ${lane + 1}">${card ? cardHtml(card, incoming ? 'preview-card' : '') : '<span class="empty-slot"></span>'}</button>`;
 }
 
@@ -327,6 +355,10 @@ function renderBattle() {
   ui.mainCount.textContent = battle.deck.length; ui.sideCount.textContent = battle.sideDeck.length;
   ui.mainDeck.disabled = busy || battle.hasDrawn || !battle.deck.length; ui.sideDeck.disabled = busy || battle.hasDrawn || !battle.sideDeck.length;
   ui.bellButton.disabled = busy || !battle.hasDrawn;
+  ui.maneuverButton.disabled = busy || battle.tacticUsed || tutorial.active;
+  ui.mendButton.disabled = busy || battle.tacticUsed || tutorial.active || battle.bones < 2;
+  ui.maneuverButton.classList.toggle('active', tacticMode === 'maneuver');
+  ui.mendButton.classList.toggle('active', tacticMode === 'mend');
   ui.bonesReadout.textContent = battle.bones;
   ui.bonePile.innerHTML = Array.from({ length: Math.min(10, battle.bones) }, (_, index) => `<i class="bone-token" style="--r:${-26 + (index * 17) % 55}deg;--x:${(index % 4) * 9}px;--y:${Math.floor(index / 4) * -7}px"></i>`).join('');
   ui.turnReadout.textContent = battle.turn <= MATCH_RULES.regulationTurns ? `Turn ${battle.turn} / ${MATCH_RULES.regulationTurns}` : `Sudden death · ${battle.turn}`;
@@ -423,6 +455,7 @@ ui.startButton.addEventListener('click', () => startRun(tutorial.shouldAutoStart
 ui.tutorialButton.addEventListener('click', () => { tutorial.replay(); startRun(); });
 ui.restartButton.addEventListener('click', () => { if (scene === 'retry') { run = retryBattle(run); startBattle(); } else startRun(); });
 ui.mainDeck.addEventListener('click', () => draw('main')); ui.sideDeck.addEventListener('click', () => draw('side'));
+ui.maneuverButton.addEventListener('click', () => chooseTactic('maneuver')); ui.mendButton.addEventListener('click', () => chooseTactic('mend'));
 ui.bellButton.addEventListener('click', ringBell); ui.offerButton.addEventListener('click', lockOffering); ui.cancelButton.addEventListener('click', clearSelection);
 ui.rulesButton.addEventListener('click', () => { audio.playCue('ui'); ui.rulesDialog.showModal(); });
 ui.audioButton.addEventListener('click', () => { audio.playCue('ui'); renderAudioControls(); ui.audioDialog.showModal(); });
@@ -446,7 +479,7 @@ ui.sigilGlossary.innerHTML = Object.values(SIGILS).map(([, name, description]) =
 
 if (new URLSearchParams(location.search).has('debug')) {
   window.__BLOOD_BONE__ = {
-    snapshot: () => ({ scene, encounter: run?.encounter ?? null, turn: battle?.turn ?? null, handCount: battle?.hand.length ?? 0, playerCards: battle?.playerLanes.filter(Boolean).map(card => card.key) || [], opponentCards: battle?.opponentLanes.filter(Boolean).map(card => card.key) || [], bones: battle?.bones ?? 0, scale: battle?.scale ?? 0, tutorial: tutorial.current()?.id || null, audio: audio.snapshot(), turnLog: ledger.snapshot(), preview: preview.map(entry => ({ lane: entry.lane, key: entry.card.key })) }),
+    snapshot: () => ({ scene, encounter: run?.encounter ?? null, turn: battle?.turn ?? null, handCount: battle?.hand.length ?? 0, playerCards: battle?.playerLanes.filter(Boolean).map(card => card.key) || [], opponentCards: battle?.opponentLanes.filter(Boolean).map(card => card.key) || [], bones: battle?.bones ?? 0, scale: battle?.scale ?? 0, tacticUsed: battle?.tacticUsed ?? false, tutorial: tutorial.current()?.id || null, audio: audio.snapshot(), turnLog: ledger.snapshot(), preview: preview.map(entry => ({ lane: entry.lane, key: entry.card.key })) }),
     winBattle: () => { if (scene === 'battle') finishBattle(true); },
     loseBattle: () => { if (scene === 'battle') finishBattle(false); },
   };

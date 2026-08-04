@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBattle, playCard, resolveCombat, drawCard, ageCards, beginPlayerTurn } from '../src/core.js';
+import { createBattle, playCard, resolveCombat, drawCard, ageCards, beginPlayerTurn, maneuverCreature, mendCreature } from '../src/core.js';
 import { createCard } from '../src/cards.js';
 
 test('blood-cost creatures require and consume eligible sacrifices', () => {
@@ -268,4 +268,31 @@ test('an exhausted player can continue taking turns without an impossible draw',
   const cardsRemain = beginPlayerTurn(createBattle({ turn: 4, deck: [{ id: 'wolf' }], sideDeck: [], hasDrawn: true }));
   assert.equal(cardsRemain.turn, 5);
   assert.equal(cardsRemain.hasDrawn, false);
+});
+
+test('one tactical action can maneuver a creature into an adjacent empty lane each turn', () => {
+  const stoat = createCard('stoat');
+  const battle = createBattle({ playerLanes: [stoat] });
+  const moved = maneuverCreature(battle, 0, 1);
+
+  assert.equal(moved.ok, true);
+  assert.equal(moved.state.playerLanes[0], null);
+  assert.equal(moved.state.playerLanes[1].name, 'Stoat');
+  assert.equal(moved.state.tacticUsed, true);
+  assert.equal(maneuverCreature(moved.state, 1, 2).reason, 'TACTIC_USED');
+  assert.equal(maneuverCreature(battle, 0, 2).reason, 'NOT_ADJACENT');
+  assert.equal(beginPlayerTurn(moved.state).tacticUsed, false);
+});
+
+test('mending spends two Bones and restores Health without exceeding printed Health', () => {
+  const wounded = { ...createCard('riverSnapper'), health: 3 };
+  const battle = createBattle({ playerLanes: [wounded], bones: 3 });
+  const mended = mendCreature(battle, 0);
+
+  assert.equal(mended.ok, true);
+  assert.equal(mended.state.playerLanes[0].health, 5);
+  assert.equal(mended.state.bones, 1);
+  assert.equal(mended.state.tacticUsed, true);
+  assert.deepEqual(mended.event, { type: 'mend', cardName: 'River Snapper', lane: 0, healed: 2, bones: 2 });
+  assert.equal(mendCreature(createBattle({ playerLanes: [createCard('stoat')], bones: 2 }), 0).reason, 'FULL_HEALTH');
 });

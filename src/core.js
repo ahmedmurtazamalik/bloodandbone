@@ -30,6 +30,7 @@ export function createBattle(overrides = {}) {
     bones: overrides.bones || 0,
     scale: overrides.scale || 0,
     hasDrawn: overrides.hasDrawn ?? false,
+    tacticUsed: overrides.tacticUsed ?? false,
     turn: overrides.turn || 1,
   };
 }
@@ -48,7 +49,36 @@ export function beginPlayerTurn(state) {
   const next = createBattle(state);
   next.turn += 1;
   next.hasDrawn = next.deck.length === 0 && next.sideDeck.length === 0;
+  next.tacticUsed = false;
   return next;
+}
+
+export function maneuverCreature(state, fromLane, toLane) {
+  if (state.tacticUsed) return { ok: false, reason: 'TACTIC_USED', state };
+  if (!state.playerLanes[fromLane]) return { ok: false, reason: 'NO_CREATURE', state };
+  if (Math.abs(fromLane - toLane) !== 1) return { ok: false, reason: 'NOT_ADJACENT', state };
+  if (state.playerLanes[toLane]) return { ok: false, reason: 'LANE_OCCUPIED', state };
+  const next = createBattle(state);
+  const card = next.playerLanes[fromLane];
+  next.playerLanes[toLane] = card;
+  next.playerLanes[fromLane] = null;
+  next.tacticUsed = true;
+  return { ok: true, state: next, event: { type: 'maneuver', cardName: card.name, fromLane, toLane } };
+}
+
+export function mendCreature(state, lane) {
+  if (state.tacticUsed) return { ok: false, reason: 'TACTIC_USED', state };
+  const card = state.playerLanes[lane];
+  if (!card) return { ok: false, reason: 'NO_CREATURE', state };
+  if (state.bones < 2) return { ok: false, reason: 'NOT_ENOUGH_BONES', state };
+  const maxHealth = card.maxHealth ?? card.health;
+  if (card.health >= maxHealth) return { ok: false, reason: 'FULL_HEALTH', state };
+  const next = createBattle(state);
+  const healed = Math.min(2, maxHealth - next.playerLanes[lane].health);
+  next.playerLanes[lane].health += healed;
+  next.bones -= 2;
+  next.tacticUsed = true;
+  return { ok: true, state: next, event: { type: 'mend', cardName: card.name, lane, healed, bones: 2 } };
 }
 
 export function playCard(state, cardId, lane, sacrificeLanes = []) {

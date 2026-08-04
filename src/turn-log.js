@@ -30,6 +30,8 @@ export function describeEvent(event) {
     case 'fecundity': return `${event.cardName} creates one copy in your hand. The copy cannot replicate again.`;
     case 'return-hand': return `${event.cardName} is Unkillable and returns to your hand after ${event.reason === 'sacrifice' ? 'the sacrifice' : 'dying'}.`;
     case 'stinky': return `${event.sourceName}’s Stinky lowers ${event.attackerName} from ${event.powerBefore} Power to ${event.powerAfter} Power for this attack.`;
+    case 'maneuver': return `You maneuver ${event.cardName} from lane ${event.fromLane + 1} to lane ${event.toLane + 1}.`;
+    case 'mend': return `You spend ${plural(event.bones, 'Bone')} to mend ${event.cardName} for ${plural(event.healed, 'Health', 'Health')} in lane ${event.lane + 1}.`;
     case 'bones': return `${event.reason} ${event.amount > 0 ? (event.pluralSource ? 'add' : 'adds') : 'spends'} ${plural(Math.abs(event.amount), 'Bone')}. You have ${event.total}.`;
     case 'turn-ready': return event.drawRequired ? 'Choose either the creature deck or the Squirrel deck to begin your turn.' : 'Both draw piles are empty, so you may play or ring the bell immediately.';
     case 'victory': return `You win the trial with the scale at ${event.scale}.`;
@@ -40,7 +42,7 @@ export function describeEvent(event) {
 }
 
 const kindFor = type => ['strike','death','direct','combat-start'].includes(type) ? 'combat'
-  : ['sacrifice','bone-spend','bones'].includes(type) ? 'resource'
+  : ['sacrifice','bone-spend','bones','mend'].includes(type) ? 'resource'
     : ['victory','defeat','battle-start','turn-ready','preview'].includes(type) ? 'system' : 'action';
 
 export class TurnLedger {

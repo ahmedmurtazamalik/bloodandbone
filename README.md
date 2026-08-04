@@ -87,6 +87,8 @@ Press **Ring the Bell** to end your action phase.
 
 Enemy cards in **Next Turn** are public information. Plan sacrifices and blockers around them.
 
+Each player turn also offers one shared **Tactical Action**: **Maneuver** a creature into an adjacent empty lane, or spend **2 Bones** to **Mend** up to 2 Health. This creates a recurring choice between answering telegraphed lanes, preserving an engine creature, and saving Bones for cards.
+
 Each opponent follows an eight-turn authored cadence that alternates durable blockers, pressure cards, lane reinforcements, and explicit breathing turns. Reinforcements often contest an occupied lane instead of filling all four lanes immediately, preserving choices between racing the scale, trading creatures, and preparing a later defense.
 
 ### Rewards

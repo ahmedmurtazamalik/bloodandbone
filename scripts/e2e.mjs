@@ -86,6 +86,12 @@ try {
   assert.equal(await page.evaluate(() => localStorage.getItem('bb_tutorial_completed')), 'true');
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().tutorial), null);
   assert.ok((await page.evaluate(() => window.__BLOOD_BONE__.snapshot().audio.cueCount)) >= 12);
+  await page.locator('#maneuverButton').click();
+  await page.locator('#playerRow [data-lane="0"]').click();
+  await page.locator('#playerRow [data-lane="1"]').click();
+  assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().tacticUsed), true);
+  assert.match(await page.locator('#turnLog').innerText(), /maneuver Stoat from lane 1 to lane 2/i);
+  assert.equal(await page.locator('#maneuverButton').isDisabled(), true);
   await page.waitForTimeout(2400);
 
   // The full rules dialog explains numbers, lane targeting, special strikes, and scale math.
