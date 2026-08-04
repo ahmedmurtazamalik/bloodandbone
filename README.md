@@ -30,7 +30,7 @@ The first run opens with an eleven-step guided hand that uses the real battle st
 
 The paper **Turn ledger** beside the hand explains the battle in chronological, player-readable prose. Each numbered turn is divided into **Your phase** and **Opponent phase**. It records:
 
-- Opening hand, incoming previews, chosen draw pile, and drawn card
+- Opening hand, incoming previews, Squirrel draws, and Scout choices
 - Played cards and destination lanes
 - Every sacrificed creature, Blood provided, Bones gained, and Bones spent
 - Bell timing and left-to-right attack order
@@ -52,12 +52,12 @@ You begin each trial with:
 - Three cards from your creature deck
 - One Squirrel
 - Nine Squirrels remaining in the side deck
-- Zero Bones
+- A Marrow Reserve of 1, 2, or 3 Bones in trials I–III
 - A balanced scale
 
 The first turn uses the opening hand directly. On every later turn, choose exactly one draw:
 
-- **Creatures:** a less predictable card from the main deck
+- **Scout creatures:** reveal the top three main-deck cards, choose one, and cycle the other two to the bottom
 - **Squirrels:** a dependable free 0/1 sacrifice
 
 ### Playing cards

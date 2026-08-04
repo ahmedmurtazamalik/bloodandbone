@@ -23,4 +23,5 @@ test('rulebook explains the full-round twelve-turn contest and special targeting
   assert.match(html, /Trifurcated Strike.*left.*forward.*right/is);
   assert.match(html, /Airborne.*flies over/is);
   assert.match(html, /one tactical action per turn.*Maneuver.*adjacent empty lane.*Mend.*2 Bones/is);
+  assert.match(html, /creature deck.*reveal.*top three.*choose one.*other two.*bottom/is);
 });

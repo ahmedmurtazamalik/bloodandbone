@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { CARD_LIBRARY, STARTER_DECK, createCard } from '../src/cards.js';
-import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn } from '../src/core.js';
+import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, scoutDeck, chooseScoutedCard } from '../src/core.js';
 import { previewForTurn, deployPreview } from '../src/encounters.js';
 import { startingBonesForEncounter } from '../src/run.js';
 import { judgeMatch } from '../src/match-rules.js';
@@ -70,7 +70,13 @@ function simulate(encounter) {
     if (!state.hasDrawn) {
       const shouldDrawSide = encounter === 0 ? state.turn % 3 !== 0 : state.turn % 2 === 0;
       const source = state.sideDeck.length && (shouldDrawSide || !state.deck.length) ? 'side' : 'main';
-      const drawn = drawCard(state, source); if (drawn.ok) state = drawn.state;
+      const drawn = source === 'side' ? drawCard(state, source) : (() => {
+        const scouted = scoutDeck(state);
+        if (!scouted.ok) return scouted;
+        const choice = [...scouted.options].sort((a, b) => (b.power * 2 + b.health) - (a.power * 2 + a.health))[0];
+        return chooseScoutedCard(state, choice.id);
+      })();
+      if (drawn.ok) state = drawn.state;
       else if (!state.deck.length && !state.sideDeck.length) state.hasDrawn = true;
     }
     state = playGreedy(state, preview);

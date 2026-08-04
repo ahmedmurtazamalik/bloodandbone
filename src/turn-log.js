@@ -7,6 +7,7 @@ export function describeEvent(event) {
     case 'battle-start': return `${event.encounterName} takes the opposite seat. Your opening hand contains ${event.handNames.join(', ')}.`;
     case 'preview': return event.cardNames.length ? `Incoming this turn: ${event.cardNames.join(', ')}.` : 'No enemy cards are incoming this turn.';
     case 'draw': return `You draw ${event.cardName} from the ${event.source === 'side' ? 'Squirrel' : 'creature'} deck.`;
+    case 'scout': return `You scout ${names(event.cardNames)}, choose ${event.chosenName}, and cycle the others to the bottom.`;
     case 'sacrifice': {
       const boneCopy = event.bonesGained ? ` and gain ${plural(event.bonesGained, 'Bone')}` : '';
       const survivorCopy = event.survivorNames?.length ? ` ${names(event.survivorNames)} returns to the table through Many Lives.` : '';

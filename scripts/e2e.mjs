@@ -93,6 +93,22 @@ try {
   assert.match(await page.locator('#turnLog').innerText(), /maneuver Stoat from lane 1 to lane 2/i);
   assert.equal(await page.locator('#maneuverButton').isDisabled(), true);
   await page.waitForTimeout(2400);
+  await page.locator('#bellButton').click();
+  await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().turn >= 3);
+  const handBeforeScout = await page.evaluate(() => window.__BLOOD_BONE__.snapshot().handCount);
+  await page.locator('#mainDeck').click();
+  assert.equal(await page.locator('#scoutDialog').isVisible(), true);
+  assert.equal(await page.locator('#scoutChoices .reward-card').count(), 3);
+  await page.screenshot({ path: 'artifacts/scout.png', fullPage: true });
+  await page.locator('#scoutChoices .reward-card').nth(1).click();
+  assert.equal(await page.locator('#scoutDialog').isVisible(), false);
+  assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().handCount), handBeforeScout + 1);
+  assert.match(await page.locator('#turnLog').innerText(), /You scout .* choose .* cycle the others to the bottom/i);
+  await page.waitForFunction(() => {
+    const element = document.querySelector('#turnLog');
+    return element && element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
+  });
+  assert.equal(await page.locator('#turnLog').evaluate(element => element.scrollTop + element.clientHeight >= element.scrollHeight - 2), true);
 
   // The full rules dialog explains numbers, lane targeting, special strikes, and scale math.
   await page.locator('#rulesButton').click();
@@ -124,9 +140,7 @@ try {
   await page.screenshot({ path: 'artifacts/audio-controls.png', fullPage: true });
   await page.locator('#audioDialog .dialog-close').click();
 
-  // Newest ledger event stays visible; the paper ledger can collapse without covering play.
-  const atNewestEntry = await page.locator('#turnLog').evaluate(element => element.scrollTop + element.clientHeight >= element.scrollHeight - 2);
-  assert.equal(atNewestEntry, true);
+  // The paper ledger can collapse without covering play.
   await page.screenshot({ path: 'artifacts/turn-ledger.png', fullPage: true });
   await page.locator('#ledgerToggle').click();
   assert.equal(await page.locator('#ledgerPanel').getAttribute('class'), 'turn-ledger collapsed');
@@ -142,17 +156,17 @@ try {
   // Full run progression remains intact.
   await page.evaluate(() => window.__BLOOD_BONE__.winBattle());
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
-  assert.equal(await page.locator('.reward-card').count(), 3);
-  assert.equal(await page.locator('.reward-card .portrait svg').count(), 3);
-  const firstRewardKeys = await page.locator('.reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
+  assert.equal(await page.locator('#rewardChoices .reward-card').count(), 3);
+  assert.equal(await page.locator('#rewardChoices .reward-card .portrait svg').count(), 3);
+  const firstRewardKeys = await page.locator('#rewardChoices .reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
   await page.screenshot({ path: 'artifacts/reward.png', fullPage: true });
-  await page.locator('.reward-card').first().click();
+  await page.locator('#rewardChoices .reward-card').first().click();
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().encounter === 1);
   await page.evaluate(() => window.__BLOOD_BONE__.winBattle());
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
-  const secondRewardKeys = await page.locator('.reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
+  const secondRewardKeys = await page.locator('#rewardChoices .reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
   assert.equal(secondRewardKeys.some(key => firstRewardKeys.includes(key)), false);
-  await page.locator('.reward-card').first().click();
+  await page.locator('#rewardChoices .reward-card').first().click();
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().encounter === 2);
   await page.evaluate(() => window.__BLOOD_BONE__.winBattle());
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'victory');

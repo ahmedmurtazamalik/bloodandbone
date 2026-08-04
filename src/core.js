@@ -37,12 +37,31 @@ export function createBattle(overrides = {}) {
 
 export function drawCard(state, source) {
   if (state.hasDrawn) return { ok: false, reason: 'ALREADY_DREW', state };
-  const pileKey = source === 'side' ? 'sideDeck' : 'deck';
-  if (!state[pileKey]?.length) return { ok: false, reason: 'PILE_EMPTY', state };
+  const pile = source === 'side' ? 'sideDeck' : 'deck';
+  if (!state[pile].length) return { ok: false, reason: 'PILE_EMPTY', state };
   const next = createBattle(state);
-  next.hand.push(next[pileKey].shift());
+  next.hand.push(next[pile].shift());
   next.hasDrawn = true;
   return { ok: true, state: next };
+}
+
+export function scoutDeck(state, count = 3) {
+  if (state.hasDrawn) return { ok: false, reason: 'ALREADY_DREW', state, options: [] };
+  if (!state.deck.length) return { ok: false, reason: 'PILE_EMPTY', state, options: [] };
+  return { ok: true, state, options: state.deck.slice(0, count) };
+}
+
+export function chooseScoutedCard(state, cardId, count = 3) {
+  if (state.hasDrawn) return { ok: false, reason: 'ALREADY_DREW', state };
+  const options = state.deck.slice(0, count);
+  const chosen = options.find(card => card.id === cardId);
+  if (!chosen) return { ok: false, reason: 'NOT_SCOUTED', state };
+  const next = createBattle(state);
+  const revealed = next.deck.splice(0, options.length);
+  next.hand.push(revealed.find(card => card.id === cardId));
+  next.deck.push(...revealed.filter(card => card.id !== cardId));
+  next.hasDrawn = true;
+  return { ok: true, state: next, options };
 }
 
 export function beginPlayerTurn(state) {

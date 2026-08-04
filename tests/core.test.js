@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBattle, playCard, resolveCombat, drawCard, ageCards, beginPlayerTurn, maneuverCreature, mendCreature } from '../src/core.js';
+import { createBattle, playCard, resolveCombat, drawCard, ageCards, beginPlayerTurn, maneuverCreature, mendCreature, scoutDeck, chooseScoutedCard } from '../src/core.js';
 import { createCard } from '../src/cards.js';
 
 test('blood-cost creatures require and consume eligible sacrifices', () => {
@@ -295,4 +295,21 @@ test('mending spends two Bones and restores Health without exceeding printed Hea
   assert.equal(mended.state.tacticUsed, true);
   assert.deepEqual(mended.event, { type: 'mend', cardName: 'River Snapper', lane: 0, healed: 2, bones: 2 });
   assert.equal(mendCreature(createBattle({ playerLanes: [createCard('stoat')], bones: 2 }), 0).reason, 'FULL_HEALTH');
+});
+
+test('scouting reveals three creatures and keeps exactly one while cycling the rest', () => {
+  const cards = ['stoat', 'wolf', 'opossum', 'adder'].map(createCard);
+  const battle = createBattle({ deck: cards, hasDrawn: false });
+  const scouted = scoutDeck(battle);
+
+  assert.equal(scouted.ok, true);
+  assert.deepEqual(scouted.options.map(card => card.key), ['stoat', 'wolf', 'opossum']);
+  assert.equal(battle.deck.length, 4, 'scouting alone must not mutate the deck');
+
+  const chosen = chooseScoutedCard(battle, scouted.options[1].id);
+  assert.equal(chosen.ok, true);
+  assert.equal(chosen.state.hand.at(-1).key, 'wolf');
+  assert.deepEqual(chosen.state.deck.map(card => card.key), ['adder', 'stoat', 'opossum']);
+  assert.equal(chosen.state.hasDrawn, true);
+  assert.equal(chooseScoutedCard(battle, cards[3].id).reason, 'NOT_SCOUTED');
 });

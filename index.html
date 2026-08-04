@@ -86,7 +86,7 @@
       <section class="hand-table">
         <div class="piles">
           <button id="mainDeck" class="deck-pile" aria-label="Draw from creature deck">
-            <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="mainCount">0</b><em>Creature deck</em><small>Draw unknown</small>
+            <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="mainCount">0</b><em>Creature deck</em><small>Scout 3 · choose 1</small>
           </button>
           <button id="sideDeck" class="deck-pile side" aria-label="Draw a squirrel">
             <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="sideCount">0</b><em>Squirrel deck</em><small>Draw an offering</small>
@@ -125,12 +125,18 @@
       </div>
     </section>
 
+    <dialog id="scoutDialog" class="scout-dialog" aria-labelledby="scoutTitle">
+      <p class="kicker">Read the tracks</p><h2 id="scoutTitle">Choose your quarry</h2>
+      <p>Take one creature. The other revealed cards move to the bottom of your deck.</p>
+      <div id="scoutChoices" class="reward-choices scout-choices"></div>
+    </dialog>
+
     <dialog id="rulesDialog">
       <form method="dialog"><button class="dialog-close" aria-label="Close rules">×</button></form>
       <p class="kicker">The little rulebook</p><h2>Blood, Bones & Sigils</h2>
       <div class="rules-grid">
         <article><b>Card numbers</b><p><strong>Power is the damage</strong> dealt when a creature attacks. <strong>Health is how much damage</strong> it can take before dying. Damage remains between turns; the red heart shows current Health.</p></article>
-        <article><b>Draw</b><p>Your opening hand is dealt. On each later turn, choose exactly one unknown creature or one dependable Squirrel.</p></article>
+        <article><b>Draw</b><p>Your opening hand is dealt. On each later turn, choose the dependable Squirrel deck or Scout the creature deck: reveal the top three creatures, choose one, and place the other two on the bottom.</p></article>
         <article><b>Blood</b><p>Red-seal cards require creatures already on your side to be offered. Most provide one Blood; their deaths also leave Bones.</p></article>
         <article><b>Bones</b><p>Every friendly death leaves one Bone. Ivory-cost cards spend the pile without needing sacrifices. The Marrow Reserve starts trials I–III with 1, 2, and 3 Bones. Your first loss in a run grants one retry of that trial with 2 extra Broken Bones; a second loss ends the run.</p></article>
         <article><b>Lanes & blocks</b><p>When you ring the bell, your creatures attack first from left to right. Normally each attacks the same numbered lane. An opposing creature blocks the hit and loses Health; an empty lane takes scale damage.</p></article>

@@ -1,5 +1,5 @@
 import { CARD_LIBRARY, STARTER_DECK, createCard } from './cards.js';
-import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, maneuverCreature, mendCreature } from './core.js';
+import { createBattle, drawCard, playCard, resolveCombat, ageCards, beginPlayerTurn, maneuverCreature, mendCreature, scoutDeck, chooseScoutedCard } from './core.js';
 import { createRun, completeBattle, chooseReward, retryBattle, ENCOUNTERS, startingBonesForEncounter, startingBonesForRun } from './run.js';
 import { previewForTurn, deployPreview } from './encounters.js';
 import { CARD_ART } from './illustrations.js';
@@ -10,7 +10,7 @@ import { COMBAT_PACING, pacingForEvent } from './combat-pacing.js';
 import { MATCH_RULES, judgeMatch } from './match-rules.js';
 
 const ui = Object.fromEntries([
-  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
+  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
 ].map(id => [id, document.getElementById(id)]));
 
 const SIGILS = Object.freeze({
@@ -34,6 +34,7 @@ let run = null;
 let battle = null;
 let preview = [];
 let rewardKeys = [];
+let scoutOptions = [];
 let selectedId = null;
 let sacrificeLanes = [];
 let selectionStage = null;
@@ -99,7 +100,8 @@ function startBattle() {
   ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: marrowBones, total: marrowBones });
   if (run.losses) ledger.add({ type: 'bones', reason: 'Broken Bones', amount: 2, total: startingBones, pluralSource: true });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
-  selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; busy = false;
+  selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; scoutOptions = []; busy = false;
+  if (ui.scoutDialog.open) ui.scoutDialog.close();
   scene = 'battle'; render();
 }
 
@@ -118,10 +120,31 @@ function advanceTutorial(action, target) {
 function draw(source) {
   if (busy || scene !== 'battle') return;
   if (!tutorialAllows('draw', source)) return;
+  if (source === 'main') {
+    const result = scoutDeck(battle);
+    if (!result.ok) { showToast(result.reason === 'ALREADY_DREW' ? 'YOU HAVE ALREADY DRAWN THIS TURN' : 'THAT PILE IS EMPTY'); audio.playCue('invalid'); return; }
+    scoutOptions = result.options;
+    renderScoutChoices();
+    audio.playCue('draw');
+    ui.scoutDialog.showModal();
+    return;
+  }
   const result = drawCard(battle, source);
   if (!result.ok) { showToast(result.reason === 'ALREADY_DREW' ? 'YOU HAVE ALREADY DRAWN THIS TURN' : 'THAT PILE IS EMPTY'); audio.playCue('invalid'); return; }
   battle = result.state; ledger.add({ type: 'draw', cardName: battle.hand.at(-1).name, source });
   advanceTutorial('draw', source); audio.playCue('draw'); render();
+}
+
+function chooseScout(cardId) {
+  const result = chooseScoutedCard(battle, cardId);
+  if (!result.ok) { showToast('THAT CREATURE IS NO LONGER AVAILABLE'); audio.playCue('invalid'); return; }
+  const chosen = result.state.hand.at(-1);
+  battle = result.state;
+  ledger.add({ type: 'scout', cardNames: scoutOptions.map(card => card.name), chosenName: chosen.name });
+  advanceTutorial('draw', 'main');
+  scoutOptions = [];
+  ui.scoutDialog.close();
+  audio.playCue('draw'); render();
 }
 
 function selectCard(cardId) {
@@ -411,7 +434,10 @@ function renderTurnLog() {
     <h3>Turn ${turn.turn}</h3>
     ${turn.phases.filter(phase => phase.entries.length).map(phase => `<section class="log-phase ${phase.side}"><h4>${phase.side === 'player' ? 'Your phase' : 'Opponent phase'}</h4><ul>${phase.entries.map(entry => `<li class="log-entry ${entry.kind}" data-event="${entry.type}">${escapeHtml(entry.text)}</li>`).join('')}</ul></section>`).join('')}
   </article>`).join('');
-  if (entryCount !== renderedLogEntries) requestAnimationFrame(() => { ui.turnLog.scrollTop = ui.turnLog.scrollHeight; });
+  if (entryCount !== renderedLogEntries) {
+    ui.turnLog.scrollTop = ui.turnLog.scrollHeight;
+    requestAnimationFrame(() => { ui.turnLog.scrollTop = ui.turnLog.scrollHeight; });
+  }
   renderedLogEntries = entryCount;
 }
 
@@ -435,6 +461,11 @@ function renderRewards() {
   ui.rewardChoices.querySelectorAll('button').forEach(button => button.addEventListener('click', () => takeReward(button.dataset.key)));
 }
 
+function renderScoutChoices() {
+  ui.scoutChoices.innerHTML = scoutOptions.map(card => `<button class="reward-card" data-id="${card.id}" aria-label="Draw ${card.name}">${cardHtml(card)}</button>`).join('');
+  ui.scoutChoices.querySelectorAll('button').forEach(button => button.addEventListener('click', () => chooseScout(button.dataset.id)));
+}
+
 function renderResult() {
   const won = scene === 'victory';
   const retrying = scene === 'retry';
@@ -456,6 +487,7 @@ ui.tutorialButton.addEventListener('click', () => { tutorial.replay(); startRun(
 ui.restartButton.addEventListener('click', () => { if (scene === 'retry') { run = retryBattle(run); startBattle(); } else startRun(); });
 ui.mainDeck.addEventListener('click', () => draw('main')); ui.sideDeck.addEventListener('click', () => draw('side'));
 ui.maneuverButton.addEventListener('click', () => chooseTactic('maneuver')); ui.mendButton.addEventListener('click', () => chooseTactic('mend'));
+ui.scoutDialog.addEventListener('cancel', event => event.preventDefault());
 ui.bellButton.addEventListener('click', ringBell); ui.offerButton.addEventListener('click', lockOffering); ui.cancelButton.addEventListener('click', clearSelection);
 ui.rulesButton.addEventListener('click', () => { audio.playCue('ui'); ui.rulesDialog.showModal(); });
 ui.audioButton.addEventListener('click', () => { audio.playCue('ui'); renderAudioControls(); ui.audioDialog.showModal(); });
