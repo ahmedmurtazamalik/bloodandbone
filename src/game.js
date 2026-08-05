@@ -98,7 +98,7 @@ function startBattle() {
   battle = createBattle({ hand, deck, sideDeck, bones: startingBones, hasDrawn: true, turn: 1 });
   preview = previewForTurn(run.encounter, 1);
   ledger.clear(); renderedLogEntries = 0; ledger.beginTurn(1);
-  ledger.add({ type: 'battle-start', encounterName: ENCOUNTERS[run.encounter].name, handNames: hand.map(card => card.name) });
+  ledger.add({ type: 'battle-start', encounterName: ENCOUNTERS[run.encounter].name, handNames: hand.map(card => card.name), deckNames: run.deck.map(key => CARD_LIBRARY[key]?.name || key) });
   ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: marrowBones, total: marrowBones });
   if (run.losses) ledger.add({ type: 'bones', reason: 'Broken Bones', amount: 2, total: startingBones, pluralSource: true });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
@@ -389,6 +389,7 @@ function renderBattle() {
   ui.hand.innerHTML = battle.hand.map(card => `<button class="hand-card card ${selectedId === card.id ? 'selected' : ''} ${card.rarity === 'rare' ? 'rare' : ''}" data-id="${card.id}" data-key="${card.key}">${cardInnerHtml(card)}</button>`).join('');
   ui.hand.querySelectorAll('.hand-card').forEach(button => button.addEventListener('click', () => selectCard(button.dataset.id)));
   ui.mainCount.textContent = battle.deck.length; ui.sideCount.textContent = battle.sideDeck.length;
+  ui.mainDeck.title = battle.deck.length ? `Creature deck (${battle.deck.length} remaining): ${battle.deck.map(card => card.name).join(', ')}` : 'Creature deck empty';
   ui.mainDeck.disabled = busy || battle.hasDrawn || !battle.deck.length; ui.sideDeck.disabled = busy || battle.hasDrawn || !battle.sideDeck.length;
   ui.bellButton.disabled = busy || !battle.hasDrawn;
   ui.maneuverButton.disabled = busy || battle.tacticUsed || tutorial.active;

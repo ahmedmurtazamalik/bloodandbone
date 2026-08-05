@@ -4,7 +4,10 @@ const balanceText = scale => scale === 0 ? 'The scale is even.' : scale > 0 ? `Y
 
 export function describeEvent(event) {
   switch (event.type) {
-    case 'battle-start': return `${event.encounterName} takes the opposite seat. Your opening hand contains ${event.handNames.join(', ')}.`;
+    case 'battle-start': {
+      const deckCopy = event.deckNames?.length ? ` Deck (${plural(event.deckNames.length, 'card')}): ${event.deckNames.join(', ')}.` : '';
+      return `${event.encounterName} takes the opposite seat. Your opening hand contains ${event.handNames.join(', ')}.${deckCopy}`;
+    }
     case 'preview': return event.cardNames.length ? `Incoming this turn: ${event.cardNames.join(', ')}.` : 'No enemy cards are incoming this turn.';
     case 'draw': return `You draw ${event.cardName} from the ${event.source === 'side' ? 'Squirrel' : 'creature'} deck.`;
     case 'scout': return `You scout ${names(event.cardNames)}, choose ${event.chosenName}, and cycle the others to the bottom.`;
