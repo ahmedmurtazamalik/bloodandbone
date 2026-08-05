@@ -36,14 +36,20 @@ test('three victories with two card rewards complete a compact run', () => {
 
   run = completeBattle(run, true);
   assert.equal(run.phase, 'reward');
-  run = chooseReward(run, run.rewardOptions[0]);
+  const reward1 = run.rewardOptions[0];
+  run = chooseReward(run, reward1);
   assert.equal(run.encounter, 1);
   assert.equal(run.phase, 'battle');
   assert.equal(run.deck.length, originalSize + 1);
+  assert.equal(run.deck.includes(reward1), true);
 
   run = completeBattle(run, true);
-  run = chooseReward(run, run.rewardOptions[0]);
+  const reward2 = run.rewardOptions[0];
+  run = chooseReward(run, reward2);
   assert.equal(run.encounter, 2);
+  assert.equal(run.deck.includes(reward1), true);
+  assert.equal(run.deck.includes(reward2), true);
+
   run = completeBattle(run, true);
   assert.equal(run.phase, 'victory');
 });

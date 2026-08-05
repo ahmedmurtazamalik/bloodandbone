@@ -1,0 +1,673 @@
+{
+  "outcome": {
+    "scene": "reward",
+    "encounter": 0,
+    "turn": 16,
+    "handCount": 2,
+    "playerCards": [
+      "riverSnapper",
+      "sparrow"
+    ],
+    "opponentCards": [
+      "stoat",
+      "riverSnapper",
+      "beehive",
+      "beehive"
+    ],
+    "bones": 2,
+    "scale": 6,
+    "tacticUsed": true,
+    "tutorial": null,
+    "audio": {
+      "musicVolume": 0.55,
+      "sfxVolume": 0.78,
+      "muted": false,
+      "unlocked": true,
+      "contextState": "running",
+      "cueCount": 251,
+      "musicConfigured": true,
+      "musicPlaying": true,
+      "musicSrc": "http://127.0.0.1:4174/artifacts/hamlet.mp3"
+    },
+    "turnLog": [
+      {
+        "turn": 9,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "Incoming this turn: Bullfrog in lane 1.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You scout Black Goat, Bullfrog and Coyote, choose Coyote, and cycle the others to the bottom.",
+                "kind": "action",
+                "type": "scout"
+              },
+              {
+                "text": "You spend 4 Bones to summon Coyote.",
+                "kind": "resource",
+                "type": "bone-spend"
+              },
+              {
+                "text": "You play Coyote in lane 3.",
+                "kind": "action",
+                "type": "play"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Wolf attacks through open lane 1 for 3 scale damage. The scale is even.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "Raven blocks River Snapper in lane 2 and takes 1 damage. Raven has 1 health left.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Stoat blocks Coyote in lane 3 and takes 2 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Stoat dies in lane 3.",
+                "kind": "combat",
+                "type": "death"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent sends Bullfrog into lane 1.",
+                "kind": "action",
+                "type": "deploy"
+              },
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Wolf blocks Bullfrog in lane 1 and takes 1 damage. Wolf has 1 health left.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Raven flies over River Snapper in lane 2 for 2 scale damage. The opponent now leads by 2.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 10,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "Incoming this turn: Coyote in lane 3.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You draw Squirrel from the Squirrel deck.",
+                "kind": "action",
+                "type": "draw"
+              },
+              {
+                "text": "You play Squirrel in lane 4.",
+                "kind": "action",
+                "type": "play"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Bullfrog blocks Wolf in lane 1 and takes 3 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Bullfrog dies in lane 1.",
+                "kind": "combat",
+                "type": "death"
+              },
+              {
+                "text": "Raven blocks River Snapper in lane 2 and takes 1 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Raven dies in lane 2.",
+                "kind": "combat",
+                "type": "death"
+              },
+              {
+                "text": "Coyote attacks through open lane 3 for 2 scale damage. The scale is even.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent sends Coyote into lane 3.",
+                "kind": "action",
+                "type": "deploy"
+              },
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Coyote blocks Coyote in lane 3 and takes 2 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Coyote dies in lane 3. You gain 1 Bone.",
+                "kind": "combat",
+                "type": "death"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 11,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "No enemy cards are incoming this turn.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You draw Squirrel from the Squirrel deck.",
+                "kind": "action",
+                "type": "draw"
+              },
+              {
+                "text": "You play Squirrel in lane 3.",
+                "kind": "action",
+                "type": "play"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Wolf attacks through open lane 1 for 3 scale damage. You now lead by 3.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "River Snapper attacks through open lane 2 for 1 scale damage. You now lead by 4.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Squirrel blocks Coyote in lane 3 and takes 2 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Squirrel dies in lane 3. You gain 1 Bone.",
+                "kind": "combat",
+                "type": "death"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 12,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "Incoming this turn: Stoat in lane 1, Sparrow in lane 4.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You scout Sparrow, Black Goat and Bullfrog, choose Sparrow, and cycle the others to the bottom.",
+                "kind": "action",
+                "type": "scout"
+              },
+              {
+                "text": "You offer Squirrel for 1 Blood and gain 1 Bone.",
+                "kind": "resource",
+                "type": "sacrifice"
+              },
+              {
+                "text": "You play Sparrow in lane 3.",
+                "kind": "action",
+                "type": "play"
+              },
+              {
+                "text": "You maneuver Sparrow from lane 3 to lane 4.",
+                "kind": "action",
+                "type": "maneuver"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Wolf attacks through open lane 1 for 3 scale damage. You now lead by 7.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "River Snapper attacks through open lane 2 for 1 scale damage. You now lead by 8.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "Sparrow flies over Beehive in lane 4 for 1 scale damage. You now lead by 9.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent sends Stoat into lane 1.",
+                "kind": "action",
+                "type": "deploy"
+              },
+              {
+                "text": "Sparrow cannot enter occupied lane 4; deployment fails.",
+                "kind": "action",
+                "type": "blocked-deploy"
+              },
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Wolf blocks Stoat in lane 1 and takes 1 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Wolf dies in lane 1. You gain 1 Bone.",
+                "kind": "combat",
+                "type": "death"
+              },
+              {
+                "text": "Coyote attacks through open lane 3 for 2 scale damage. You now lead by 7.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 13,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "Incoming this turn: River Snapper in lane 2.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You draw Squirrel from the Squirrel deck.",
+                "kind": "action",
+                "type": "draw"
+              },
+              {
+                "text": "You play Squirrel in lane 3.",
+                "kind": "action",
+                "type": "play"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "River Snapper attacks through open lane 2 for 1 scale damage. You now lead by 8.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "Sparrow flies over Beehive in lane 4 for 1 scale damage. You now lead by 9.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent sends River Snapper into lane 2.",
+                "kind": "action",
+                "type": "deploy"
+              },
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Stoat attacks through open lane 1 for 1 scale damage. You now lead by 8.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "River Snapper blocks River Snapper in lane 2 and takes 1 damage. River Snapper has 5 health left.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Squirrel blocks Coyote in lane 3 and takes 2 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Squirrel dies in lane 3. You gain 1 Bone.",
+                "kind": "combat",
+                "type": "death"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 14,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "No enemy cards are incoming this turn.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You draw Squirrel from the Squirrel deck.",
+                "kind": "action",
+                "type": "draw"
+              },
+              {
+                "text": "You play Squirrel in lane 3.",
+                "kind": "action",
+                "type": "play"
+              },
+              {
+                "text": "You spend 2 Bones to mend River Snapper for 1 Health in lane 2.",
+                "kind": "resource",
+                "type": "mend"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "River Snapper blocks River Snapper in lane 2 and takes 1 damage. River Snapper has 5 health left.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Sparrow flies over Beehive in lane 4 for 1 scale damage. You now lead by 9.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Stoat attacks through open lane 1 for 1 scale damage. You now lead by 8.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "River Snapper blocks River Snapper in lane 2 and takes 1 damage. River Snapper has 5 health left.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Squirrel blocks Coyote in lane 3 and takes 2 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Squirrel dies in lane 3. You gain 1 Bone.",
+                "kind": "combat",
+                "type": "death"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 15,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "Incoming this turn: Beehive in lane 3.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You scout Black Goat and Bullfrog, choose Bullfrog, and cycle the others to the bottom.",
+                "kind": "action",
+                "type": "scout"
+              },
+              {
+                "text": "You maneuver River Snapper from lane 2 to lane 3.",
+                "kind": "action",
+                "type": "maneuver"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Coyote blocks River Snapper in lane 3 and takes 1 damage, killing it.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Coyote dies in lane 3.",
+                "kind": "combat",
+                "type": "death"
+              },
+              {
+                "text": "Sparrow flies over Beehive in lane 4 for 1 scale damage. You now lead by 9.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent sends Beehive into lane 3.",
+                "kind": "action",
+                "type": "deploy"
+              },
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Stoat attacks through open lane 1 for 1 scale damage. You now lead by 8.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "River Snapper attacks through open lane 2 for 1 scale damage. You now lead by 7.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "turn": 16,
+        "phases": [
+          {
+            "side": "player",
+            "entries": [
+              {
+                "text": "No enemy cards are incoming this turn.",
+                "kind": "system",
+                "type": "preview"
+              },
+              {
+                "text": "Choose either the creature deck or the Squirrel deck to begin your turn.",
+                "kind": "system",
+                "type": "turn-ready"
+              },
+              {
+                "text": "You scout Black Goat, choose Black Goat, and cycle the others to the bottom.",
+                "kind": "action",
+                "type": "scout"
+              },
+              {
+                "text": "You spend 2 Bones to mend River Snapper for 1 Health in lane 3.",
+                "kind": "resource",
+                "type": "mend"
+              },
+              {
+                "text": "You ring the bell. Your creatures attack from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Beehive blocks River Snapper in lane 3 and takes 1 damage. Beehive has 1 health left.",
+                "kind": "combat",
+                "type": "strike"
+              },
+              {
+                "text": "Sparrow flies over Beehive in lane 4 for 1 scale damage. You now lead by 8.",
+                "kind": "combat",
+                "type": "direct"
+              }
+            ]
+          },
+          {
+            "side": "opponent",
+            "entries": [
+              {
+                "text": "The opponent’s creatures answer from left to right.",
+                "kind": "combat",
+                "type": "combat-start"
+              },
+              {
+                "text": "Stoat attacks through open lane 1 for 1 scale damage. You now lead by 7.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "River Snapper attacks through open lane 2 for 1 scale damage. You now lead by 6.",
+                "kind": "combat",
+                "type": "direct"
+              },
+              {
+                "text": "You win the trial with the scale at 6.",
+                "kind": "system",
+                "type": "victory"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "preview": []
+  },
+  "errors": []
+}
+RAW_VIDEO=/home/murtaza/Murtaza/Game/Blood and Bone/artifacts/blood-and-bone-full-trial-demo.raw.webm

@@ -78,6 +78,7 @@ function startRun(guided = false) {
 }
 
 function startBattle() {
+  if (run.encounter > 0 && tutorial.active) tutorial.skip();
   const deck = shuffle(run.deck.map(createCard));
   let hand;
   if (tutorial.active && run.encounter === 0) {
@@ -153,6 +154,12 @@ function selectCard(cardId) {
   const card = battle.hand.find(item => item.id === cardId); if (!card) return;
   if (!tutorialAllows('select-card', card.key)) return;
   if (selectedId === cardId) { clearSelection(); return; }
+  if (card.cost.type === 'bones' && battle.bones < card.cost.amount) {
+    showToast('NOT ENOUGH BONES');
+    audio.playCue('invalid');
+    clearSelection();
+    return;
+  }
   selectedId = cardId; sacrificeLanes = []; tacticMode = null; tacticSourceLane = null;
   selectionStage = card.cost.type === 'blood' && card.cost.amount > 0 ? 'sacrifice' : 'place';
   advanceTutorial('select-card', card.key); audio.playCue('select'); render();
@@ -311,6 +318,7 @@ async function animateEvents(events, side) {
 }
 
 function finishBattle(won) {
+  if (won && tutorial.active) tutorial.skip();
   ledger.add({ type: won ? 'victory' : 'defeat', scale: battle.scale }); renderTurnLog();
   busy = false; run = completeBattle(run, won);
   if (run.phase === 'reward') {
@@ -327,6 +335,7 @@ function finishBattle(won) {
 
 function takeReward(key) {
   if (scene !== 'reward') return;
+  if (tutorial.active) tutorial.skip();
   run = chooseReward(run, key); audio.playCue('reward'); audio.playCreature(key); startBattle();
 }
 
