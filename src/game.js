@@ -11,7 +11,7 @@ import { MATCH_RULES } from './match-rules.js';
 import { advanceRound } from './round-coordinator.js';
 
 const ui = Object.fromEntries([
-  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','deckViewButton','deckDialog','deckChoices','cardInspector','inspectorCard','inspectorDetails','inspectorClose','inspectButton','handPrevious','handNext','handPageReadout',
+  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','deckViewButton','deckDialog','deckChoices','fullscreenButton','cardInspector','inspectorCard','inspectorDetails','inspectorClose','inspectButton','handPrevious','handNext','handPageReadout',
 ].map(id => [id, document.getElementById(id)]));
 
 const SIGILS = Object.freeze({
@@ -739,6 +739,16 @@ for (const dialog of [ui.pauseDialog, ui.rulesDialog, ui.audioDialog, ui.ledgerD
   const returnTarget = dialogReturnFocus.get(dialog);
   if (returnTarget?.closest('dialog')?.open === false) focusWithoutInspection(ui.menuButton);
   else if (returnTarget?.getClientRects().length) focusWithoutInspection(returnTarget);
+});
+ui.fullscreenButton.addEventListener('click', async () => {
+  closeInspector(); ui.pauseDialog.close();
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch { showToast('FULL SCREEN IS NOT AVAILABLE IN THIS BROWSER'); }
+});
+document.addEventListener('fullscreenchange', () => {
+  ui.fullscreenButton.textContent = document.fullscreenElement ? 'Leave full screen' : 'Full screen';
 });
 ui.handPrevious.addEventListener('click', () => changeHandPage(-1));
 ui.handNext.addEventListener('click', () => changeHandPage(1));
