@@ -350,7 +350,7 @@ function cardInnerHtml(card) {
     const [mark, name, description] = SIGILS[sigil];
     return `<span class="sigil" title="${name}: ${description}">${mark}</span>`;
   }).join('');
-  const artwork = CARD_ART[card.key] || '';
+  const artwork = CARD_ART[card.key === 'wolfCub' && card.name === 'Wolf' ? 'wolf' : card.key] || '';
   return `
     <div class="card-name">${card.name}</div><div class="card-cost ${card.cost?.type || 'free'}">${costText(card)}</div>
     <div class="portrait">${artwork}</div><div class="sigils">${sigils}</div>
