@@ -1,0 +1,7 @@
+Generated with the built-in imagegen tool for the Blood & Bone opening screen.
+
+Use case: stylized-concept
+Asset type: landscape background artwork for the opening screen of Blood & Bone, a dark woodland creature card game.
+Primary request: Create a richly atmospheric hand-painted dark fantasy woodland scene. An ancient mossy stone altar holds a small weathered brass balance scale, scattered ivory animal bones and a few aged playing cards, with a black raven perched nearby. Towering crooked fir trees dissolve into deep mist behind it, delicate fern silhouettes in foreground, a dim amber lantern on the altar gives a restrained warm glow. Elegant, eerie and inviting, painterly storybook engraving meets fine game concept art, detailed organic textures and subtle film grain.
+Composition: wide 1536x1024 landscape. The altar and raven sit in the right half; the left third is quiet shadowy forest with very dark negative space for a text overlay. No UI, no typography, no readable letters or numbers anywhere. Full bleed art.
+Palette: near-black forest greens, muted moss, antique ivory, restrained bronze and amber. Moody soft moonlight, rich shadows, high-end art direction. No gore, no modern objects, no watermark.
