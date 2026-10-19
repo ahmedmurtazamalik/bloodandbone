@@ -85,7 +85,7 @@ Press **Ring the Bell** to end your action phase.
 7. Trials cannot end before turn 12. From turn 12 onward, lead by 20 to win by domination.
 8. If nobody dominates, the turn-16 leader wins regulation; ties continue into sudden death.
 
-Enemy cards in **Incoming** are public information. Plan sacrifices and blockers around them.
+The board has two combat rows: the opponent's creatures and yours. **Next** tabs attached to the opponent's lanes reveal creatures waiting to enter after your attack. They are queued plays, not creatures already on the board. Inspect a tab to read its full card, then plan sacrifices and blockers around it.
 
 Each player turn also offers one shared **Tactical Action**: **Maneuver** a creature into an adjacent empty lane, or spend **2 Bones** to **Mend** up to 2 Health. This creates a recurring choice between answering telegraphed lanes, preserving an engine creature, and saving Bones for cards.
 
@@ -119,7 +119,7 @@ The game uses one viewport-sized card table, informed by a study of actual deckb
 - 32 unique local two-tone SVG creature illustrations
 - Original local table texture and an engraved opponent, consistent with the creature woodcuts
 - Ivory cards with Blood/Bone symbols, distinct sigils, and prominent Power/Health numbers
-- Four aligned positions for incoming, opponent, and player cards
+- Two combat rows with four lanes each; compact Next tabs attached to opponent lanes show queued plays
 - A foreground fan hand, with seven visible cards on desktop or five on narrow phones and page controls for larger hands
 - Hover/focus card inspection and explicit touch inspection, including full sigil descriptions
 - Written sigil names and effects beside Scout and reward choices

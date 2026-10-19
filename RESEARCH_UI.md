@@ -51,3 +51,7 @@ For games, the relevant problem also includes inconsistent art direction. A [202
 6. Retain semantic color and redundant state cues: Blood, Bones, current Health, legal targets, selected offerings, and combat progress. Palette changes must not erase meaning.
 
 [Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/use-an-easily-readable-default-font-size/) recommends a readable default size and identifies small-screen viewing as a common difficulty. Review actual rendered text; a mechanically contained viewport is insufficient. Verification must include crowded hands, card inspection, sacrifice confirmation, tutorial actions, modal focus return, reduced motion, and both portrait phones and desktop battle scenes.
+
+## Two-row clarification — 19 October 2026
+
+The separate incoming card strip still suggested a third combat row. The board now has only the opponent and player rows. Queued creatures appear as small Next tabs connected to their intended opponent lanes, with no extra card slots or empty queue markers. Tabs expose the creature's name and Power/Health; inspection retains its full card and sigils. The timing label says “Plays after your attack,” matching reinforcement deployment within the round. A tab disappears when its creature enters play, and the next forecast appears when the new turn begins.

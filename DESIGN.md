@@ -11,7 +11,7 @@ The presentation is original: abstract creature runes, dark woodland-table styli
 1. A new player can understand the entire loop from the table itself.
 2. Sacrifice decisions create short-term loss for long-term lane advantage.
 3. Bones make deaths useful and support a second card economy.
-4. Face-up incoming cards make each turn a positional puzzle rather than a guessing game.
+4. Visible Next tabs reveal upcoming opponent plays so each turn is a positional puzzle rather than a guessing game.
 5. The shared scale produces reversals instead of two independent health totals.
 6. A full run is short enough to replay but long enough for two deckbuilding decisions.
 7. Included sigils must be readable, deterministic, and meaningfully distinct.
@@ -25,7 +25,7 @@ The presentation is original: abstract creature runes, dark woodland-table styli
 5. Play any affordable cards:
    - Blood cards consume friendly creatures as sacrifices.
    - Bone cards spend Bones accumulated from friendly deaths.
-6. Read the enemy's face-up incoming row.
+6. Read the Next tabs attached to the opponent's lanes; inspect a tab for its full card.
 7. Ring the bell:
    - Player cards attack left-to-right.
    - Incoming enemy cards descend into open lanes.
@@ -36,7 +36,7 @@ The presentation is original: abstract creature runes, dark woodland-table styli
 
 ## Rules retained from Act I
 
-- Four active lanes per side and a four-lane enemy queue.
+- Two combat rows with four active lanes per side; queued enemy plays are annotations on the opponent's lanes.
 - One card per active lane.
 - Normal attacks hit the opposing creature; open lanes damage the scale.
 - Damage persists while a creature remains on the board.
