@@ -156,3 +156,11 @@ body.tutorial-running::after{content:'';position:fixed;inset:0;z-index:30;backgr
   .scout-dialog{padding:24px 6px}.scout-dialog h2{font-size:29px}.scout-dialog>p:not(.kicker){font-size:13px}.scout-choices .card{--card-w:102px;height:170px}.scout-choices .portrait{height:72px}
 }
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+/* Semantic card symbols and persistent numeric combat values. */
+.card-icon { display: inline-block; flex-shrink: 0; width: 16px; height: 16px; fill: currentColor; vertical-align: middle; }
+.card-cost { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.card-cost .card-icon { width: 10px; height: 13px; }
+.sigil .card-icon { width: 16px; height: 16px; }
+.stats > span { display: flex; align-items: center; gap: 2px; width: auto; height: auto; background: transparent; border: 0; clip-path: none; box-shadow: none; }
+.stats .power { color: #312a1c; }.stats .health { color: #8d3025; }.stat-value { font: inherit; }

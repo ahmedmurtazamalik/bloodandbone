@@ -305,7 +305,7 @@ async function animateEvents(events, side) {
     ledger.add(event); renderTurnLog();
     attackerLane?.classList.remove('attacking'); lane?.classList.add('flash'); ui.board.classList.add('impact');
     if (event.type === 'strike') {
-      const health = lane?.querySelector('.health');
+      const health = lane?.querySelector('.health .stat-value');
       if (health) health.textContent = event.healthRemaining;
     }
     if (event.type === 'death') lane?.classList.add('dying');
@@ -339,26 +339,50 @@ function takeReward(key) {
   run = chooseReward(run, key); audio.playCue('reward'); audio.playCreature(key); startBattle();
 }
 
-function costText(card) {
-  if (card.cost.type === 'free') return 'FREE';
-  if (card.cost.type === 'bones') return `♢${card.cost.amount}`;
-  return '●'.repeat(card.cost.amount);
+function cardDescription(card) {
+  const cost = card.cost.type === 'free' ? 'Free to play' : `Costs ${card.cost.amount} ${card.cost.type === 'blood' ? 'Blood' : 'Bones'}`;
+  const abilities = sigilsOf(card).filter(sigil => SIGILS[sigil]).map(sigil => `${SIGILS[sigil][1]}: ${SIGILS[sigil][2]}`);
+  return `${card.name}. ${card.power} Power, ${card.health} Health. ${cost}.${abilities.length ? ` ${abilities.join(' ')}` : ''}`;
+}
+
+const ICON_PATHS = Object.freeze({
+  blood: '<path d="M12 2C9 7 5 10 5 15a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M8 15a4 4 0 0 0 4 4"/>',
+  bones: '<path d="m7 5 12 12c3-1 4 3 2 4s-4 1-4-2L5 7C2 8 1 4 3 3s4-1 4 2Z"/>',
+  power: '<path d="m5 19 13-13 3-4-4 3L4 18m1-7 8 8m-9-1-2 4 4-2"/>',
+  health: '<path d="M12 21 3 12C-2 5 7 1 12 7c5-6 14-2 9 5Z"/>',
+  airborne: '<path d="M12 18V8m0 4L5 6 2 8l6 8m4-4 7-6 3 2-6 8M9 20h6"/>',
+  'mighty-leap': '<path d="M4 19c0-6 3-10 8-14 5 4 8 8 8 14M8 9l4-4 4 4M8 19h8"/>',
+  'touch-of-death': '<path d="M7 18v3h10v-3c3-2 4-4 4-8a9 9 0 0 0-18 0c0 4 1 6 4 8Z"/><circle cx="8" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><path d="m10 16 2-3 2 3"/>',
+  'many-lives': '<path d="M12 7c-6-8-15 1-9 7l9 7 9-7c6-6-3-15-9-7Z"/><path d="M7 12h10m-5-5v10"/>',
+  'worthy-sacrifice': '<path d="M5 3 2 9a3 3 0 0 0 6 0L5 3Zm14 0-3 6a3 3 0 0 0 6 0l-3-6ZM12 12l-3 6a3 3 0 0 0 6 0l-3-6Z"/>',
+  bifurcated: '<path d="M12 21V11L3 3m9 8 9-8M3 9V3h6m6 0h6v6"/>',
+  trifurcated: '<path d="M12 22V2m-4 4 4-4 4 4M12 14 2 4m10 10L22 4M2 10V4h6m8 0h6v6"/>',
+  fledgling: '<path d="M12 22V7m-4 4 4-4 4 4M12 17C4 17 3 13 3 10c5 0 9 3 9 7Zm0-3c7 0 9-4 9-7-5 0-9 3-9 7Z"/>',
+  'rabbit-hole': '<path d="M7 13C1-2 8-2 10 12m4 0c2-14 9-14 3 1M6 15c0-5 12-5 12 0v2c0 6-12 6-12 0Z"/><circle cx="9" cy="16" r=".7"/><circle cx="15" cy="16" r=".7"/>',
+  fecundity: '<rect x="3" y="3" width="12" height="15" rx="2"/><rect x="9" y="7" width="12" height="15" rx="2"/>',
+  unkillable: '<path d="M19 7a9 9 0 1 0 2 10M19 2v6h-6"/><path d="M9 12h6m-3-3v6"/>',
+  stinky: '<path d="M5 21c-4-5 4-6 0-11m7 11c-4-5 4-6 0-11m7 11c-4-5 4-6 0-11M5 5V2m7 3V2m7 3V2"/>',
+});
+
+function icon(name) {
+  return `<svg class="card-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name] || ''}</svg>`;
 }
 
 function cardInnerHtml(card) {
   const sigils = sigilsOf(card).filter(sigil => SIGILS[sigil]).map(sigil => {
-    const [mark, name, description] = SIGILS[sigil];
-    return `<span class="sigil" title="${name}: ${description}">${mark}</span>`;
+    const [, name, description] = SIGILS[sigil];
+    return `<span class="sigil" title="${name}: ${description}" aria-label="${name}">${icon(sigil)}</span>`;
   }).join('');
   const artwork = CARD_ART[card.key === 'wolfCub' && card.name === 'Wolf' ? 'wolf' : card.key] || '';
+  const cost = card.cost.type === 'free' ? 'FREE' : `${icon(card.cost.type)}<span>${card.cost.amount}</span>`;
   return `
-    <div class="card-name">${card.name}</div><div class="card-cost ${card.cost?.type || 'free'}">${costText(card)}</div>
-    <div class="portrait">${artwork}</div><div class="sigils">${sigils}</div>
-    <div class="stats"><span class="power" title="Power">${card.power}</span><span class="health" title="Health">${card.health}</span></div>`;
+    <div class="card-name">${card.name}</div><div class="card-cost ${card.cost?.type || 'free'}">${cost}</div>
+    <div class="portrait" aria-hidden="true">${artwork}</div><div class="sigils">${sigils}</div>
+    <div class="stats"><span class="power" title="Power">${icon('power')}<b class="stat-value">${card.power}</b></span><span class="health" title="Health">${icon('health')}<b class="stat-value">${card.health}</b></span></div>`;
 }
 
 function cardHtml(card, classes = '') {
-  return `<div class="card ${card.rarity === 'rare' ? 'rare' : ''} ${classes}" data-key="${card.key || ''}">${cardInnerHtml(card)}</div>`;
+  return `<div class="card ${card.rarity === 'rare' ? 'rare' : ''} ${classes}" data-key="${card.key || ''}" title="${escapeHtml(cardDescription(card))}">${cardInnerHtml(card)}</div>`;
 }
 
 function canManeuverFrom(lane) {
