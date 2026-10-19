@@ -240,7 +240,7 @@ async function ringBell() {
   if (busy || !battle.hasDrawn) { showToast('DRAW BEFORE ENDING THE TURN'); return; }
   if (!tutorialAllows('ring-bell')) return;
   advanceTutorial('ring-bell');
-  busy = true; selectedId = null; sacrificeLanes = []; selectionStage = null; render();
+  busy = true; selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; render();
   ui.bellButton.classList.add('ringing'); setTimeout(() => ui.bellButton.classList.remove('ringing'), 760);
   audio.playCue('bell');
 
@@ -361,10 +361,20 @@ function cardHtml(card, classes = '') {
   return `<div class="card ${card.rarity === 'rare' ? 'rare' : ''} ${classes}" data-key="${card.key || ''}">${cardInnerHtml(card)}</div>`;
 }
 
+function canManeuverFrom(lane) {
+  return Boolean(battle.playerLanes[lane]) && [lane - 1, lane + 1].some(target => target >= 0 && target < 4 && !battle.playerLanes[target]);
+}
+
+
+function canMend(card) {
+  return Boolean(card) && card.health < (card.maxHealth ?? card.health);
+}
+
+
 function laneHtml(card, lane, side, incoming = false) {
   const selected = side === 'player' && (sacrificeLanes.includes(lane) || tacticSourceLane === lane);
-  const tacticTarget = tacticMode === 'maneuver' ? (tacticSourceLane == null ? Boolean(card) : !card && Math.abs(tacticSourceLane - lane) === 1)
-    : tacticMode === 'mend' ? Boolean(card) : false;
+  const tacticTarget = tacticMode === 'maneuver' ? (tacticSourceLane == null ? canManeuverFrom(lane) : !card && Math.abs(tacticSourceLane - lane) === 1)
+    : tacticMode === 'mend' ? canMend(card) : false;
   const canTarget = side === 'player' && (tacticTarget || (selectedId && (selectionStage === 'sacrifice' ? Boolean(card) : (!card || selected))));
   return `<button class="lane ${side} ${selected ? 'sacrifice-selected' : ''} ${canTarget ? 'can-target' : ''}" data-lane="${lane}" aria-label="${side} lane ${lane + 1}">${card ? cardHtml(card, incoming ? 'preview-card' : '') : '<span class="empty-slot"></span>'}</button>`;
 }
@@ -392,10 +402,14 @@ function renderBattle() {
   ui.mainDeck.title = battle.deck.length ? `Creature deck (${battle.deck.length} remaining): ${battle.deck.map(card => card.name).join(', ')}` : 'Creature deck empty';
   ui.mainDeck.disabled = busy || battle.hasDrawn || !battle.deck.length; ui.sideDeck.disabled = busy || battle.hasDrawn || !battle.sideDeck.length;
   ui.bellButton.disabled = busy || !battle.hasDrawn;
-  ui.maneuverButton.disabled = busy || battle.tacticUsed || tutorial.active;
-  ui.mendButton.disabled = busy || battle.tacticUsed || tutorial.active || battle.bones < 2;
+  ui.maneuverButton.disabled = busy || battle.tacticUsed || tutorial.active || !battle.playerLanes.some((card, lane) => canManeuverFrom(lane));
+  ui.mendButton.disabled = busy || battle.tacticUsed || tutorial.active || battle.bones < 2 || !battle.playerLanes.some(canMend);
   ui.maneuverButton.classList.toggle('active', tacticMode === 'maneuver');
   ui.mendButton.classList.toggle('active', tacticMode === 'mend');
+  ui.maneuverButton.setAttribute('aria-pressed', String(tacticMode === 'maneuver'));
+  ui.mendButton.setAttribute('aria-pressed', String(tacticMode === 'mend'));
+  ui.maneuverButton.title = battle.tacticUsed ? 'Your tactic has been used this turn.' : 'Move one creature into an adjacent empty lane. One tactic per turn.';
+  ui.mendButton.title = battle.tacticUsed ? 'Your tactic has been used this turn.' : 'Spend 2 Bones to restore up to 2 Health to a wounded creature. One tactic per turn.';
   ui.bonesReadout.textContent = battle.bones;
   ui.bonePile.innerHTML = Array.from({ length: Math.min(10, battle.bones) }, (_, index) => `<i class="bone-token" style="--r:${-26 + (index * 17) % 55}deg;--x:${(index % 4) * 9}px;--y:${Math.floor(index / 4) * -7}px"></i>`).join('');
   ui.turnReadout.textContent = battle.turn <= MATCH_RULES.regulationTurns ? `Turn ${battle.turn} / ${MATCH_RULES.regulationTurns}` : `Sudden death · ${battle.turn}`;
