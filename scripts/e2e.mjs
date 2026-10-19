@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
+import { CARD_LIBRARY } from '../src/cards.js';
 
 const server = spawn('python3', ['-m', 'http.server', '4174'], { cwd: fileURLToPath(new URL('..', import.meta.url)), stdio: 'ignore' });
 async function waitForServer() {
@@ -30,6 +31,48 @@ async function assertGameViewport(target, label) {
     `${label} leaves the game viewport: ${JSON.stringify(dimensions)}`);
 }
 
+async function assertTwoRowBoard(target, label, checkReachability = true) {
+  assert.deepEqual(await target.locator('#board .lane-row').evaluateAll(rows => rows.map(row => row.id)), ['opponentRow', 'playerRow'], `${label} must have exactly two combat rows`);
+  for (const row of ['opponentRow', 'playerRow']) {
+    assert.deepEqual(await target.locator(`#${row} > .lane`).evaluateAll(lanes => lanes.map(lane => Number(lane.dataset.lane))), [0, 1, 2, 3]);
+  }
+  const lanePairs = await target.evaluate(() => [...document.querySelectorAll('#opponentRow > .lane')].map(opponent => {
+    const enemy = opponent.getBoundingClientRect();
+    const player = document.querySelector(`#playerRow > .lane[data-lane="${opponent.dataset.lane}"]`).getBoundingClientRect();
+    return { lane: opponent.dataset.lane, enemyCenter: enemy.left + enemy.width / 2, playerCenter: player.left + player.width / 2, enemyWidth: enemy.width, playerWidth: player.width, enemyBottom: enemy.bottom, playerTop: player.top };
+  }));
+  for (const pair of lanePairs) {
+    assert.ok(Math.abs(pair.enemyCenter - pair.playerCenter) <= 1 && Math.abs(pair.enemyWidth - pair.playerWidth) <= 1 && pair.enemyBottom <= pair.playerTop + 1, `${label} combat lane ${Number(pair.lane) + 1} is not aligned: ${JSON.stringify(pair)}`);
+  }
+
+  const expected = [...new Map((await battleSnapshot(target)).preview.map(entry => [entry.lane, entry])).values()].sort((a, b) => a.lane - b.lane);
+  const layer = target.locator('#previewRow');
+  assert.equal(await layer.locator('.lane, .card, .portrait, .empty-slot').count(), 0, 'Next plays must be annotations, without a third card row or empty slots');
+  assert.equal(await layer.evaluate(element => getComputedStyle(element).position), 'absolute');
+  assert.equal(await layer.isVisible(), expected.length > 0, 'An empty forecast must not leave a preview row');
+  assert.equal(await layer.locator(':scope > *').count(), expected.length);
+  assert.deepEqual(await layer.locator('.next-play.preview').evaluateAll(tags => tags.map(tag => Number(tag.dataset.lane))), expected.map(entry => entry.lane));
+  for (const { lane, key } of expected) {
+    const selector = `#previewRow > .next-play.preview[data-lane="${lane}"]`;
+    const tag = target.locator(selector);
+    const card = CARD_LIBRARY[key];
+    assert.equal(await tag.locator('.next-play-name').innerText(), card.name);
+    assert.equal(await tag.locator('.power b').innerText(), String(card.power));
+    assert.equal(await tag.locator('.health b').innerText(), String(card.health));
+    assert.match(await tag.getAttribute('aria-label'), new RegExp(`next play in lane ${lane + 1}:.*${card.name}.*Arrives after your attack`, 'i'));
+    const bounds = await tag.evaluate(element => {
+      const tag = element.getBoundingClientRect();
+      const lane = document.querySelector(`#opponentRow > .lane[data-lane="${element.dataset.lane}"]`).getBoundingClientRect();
+      const name = element.querySelector('.next-play-name');
+      return { center: tag.left + tag.width / 2, laneCenter: lane.left + lane.width / 2, bottom: tag.bottom, laneTop: lane.top, height: tag.height, laneHeight: lane.height, clippedName: name.scrollWidth > name.clientWidth + 1 || name.scrollHeight > name.clientHeight + 1 };
+    });
+    assert.ok(Math.abs(bounds.center - bounds.laneCenter) <= 1 && bounds.bottom <= bounds.laneTop + 1 && bounds.height < bounds.laneHeight * .75, `${label} next play must be a compact annotation above lane ${lane + 1}: ${JSON.stringify(bounds)}`);
+    assert.equal(bounds.clippedName, false, `${label} next-play name is clipped`);
+    await assertInViewport(target, selector, `${label} next play ${lane + 1}`);
+    if (checkReachability) await assertActionReachable(target, selector);
+  }
+}
+
 async function captureScreen(target, path) {
   await target.evaluate(() => window.scrollTo(0, 0));
   await target.screenshot({ path, fullPage: true });
@@ -56,10 +99,51 @@ async function checkDialogKeyboard(target, opener, dialog, label) {
     const contained = await target.evaluate(id => document.activeElement === document.body || document.activeElement?.closest('dialog')?.id === id, dialog.slice(1));
     assert.equal(contained, true, `${label} moved focus into the inert background`);
   }
-  await target.keyboard.press('Escape');
+  await escapeDialog(target, dialog);
   assert.equal(await target.locator(dialog).isVisible(), false);
   const returnTarget = opener === '#rulesButton' || opener === '#audioButton' ? '#menuButton' : opener;
   assert.equal(await target.locator(returnTarget).evaluate(element => element === document.activeElement), true, `${label} did not restore opener focus`);
+}
+
+async function escapeDialog(target, selector) {
+  await closeDialog(target, selector, () => target.keyboard.press('Escape'));
+}
+
+async function closeDialog(target, selector, action) {
+  // Native close events restore focus after .open changes; wait before starting the next action.
+  const observer = await target.locator(selector).evaluateHandle(dialog => {
+    const observer = { dialog, closed: false };
+    observer.onClose = () => { observer.closed = true; };
+    dialog.addEventListener('close', observer.onClose, { once: true });
+    return observer;
+  });
+  try {
+    await action();
+    await target.waitForFunction(observer => observer.closed, observer, { timeout: 5000 });
+  } finally {
+    await observer.evaluate(observer => observer.dialog.removeEventListener('close', observer.onClose));
+    await observer.dispose();
+  }
+}
+
+async function checkFocusedResize(target) {
+  const before = await battleSnapshot(target);
+  const origin = target.locator('#playerRow > .lane[data-lane="3"]');
+  await origin.focus();
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 960 }]) {
+    await target.setViewportSize(viewport);
+    await target.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const position = await target.evaluate(() => ({ shell: document.querySelector('#gameShell').scrollTop, table: document.querySelector('#tableScreen').scrollTop, window: scrollY, hudTop: document.querySelector('.table-hud').getBoundingClientRect().top }));
+    const { hudTop, ...scroll } = position;
+    assert.deepEqual(scroll, { shell: 0, table: 0, window: 0 }, 'Resizing a focused game control must not scroll the stage');
+    assert.ok(hudTop >= -1, `Resizing clips the HUD above the viewport: ${hudTop}`);
+    await assertGameViewport(target, `focused resize ${viewport.width}`);
+    await assertTwoRowBoard(target, `focused resize ${viewport.width}`);
+    await assertInViewport(target, '#board', `focused resize ${viewport.width} board`);
+    assert.equal(await origin.evaluate(element => element === document.activeElement), true, 'Resize must preserve the focused lane');
+    assert.deepEqual(await battleSnapshot(target), before, 'Resize must preserve the two combat rows and battle state');
+  }
+  await dismissInspector(target);
 }
 
 async function openPause(target) {
@@ -108,7 +192,7 @@ async function assertActionReachable(target, selector) {
 }
 
 async function assertInspectorCard(target, card) {
-  const name = await card.locator('.card-name').innerText();
+  const name = await card.locator('.card-name, .next-play-name').innerText();
   const power = await card.locator('.power').innerText();
   const health = await card.locator('.health').innerText();
   await target.waitForFunction(() => !document.querySelector('#cardInspector')?.hidden);
@@ -208,6 +292,7 @@ async function checkLargeHand(target, label) {
     await dismissInspector(target);
     await target.locator('#bellButton').click();
     await target.waitForFunction(turn => window.__BLOOD_BONE__.snapshot().turn > turn && !document.querySelector('#tableScreen').classList.contains('busy'), beforeTurn);
+    await assertTwoRowBoard(target, `${label} turn ${(await battleSnapshot(target)).turn}`);
     await target.locator('#sideDeck').click();
     assert.equal((await battleSnapshot(target)).scene, 'battle');
   }
@@ -266,7 +351,9 @@ try {
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 1);
   assert.match(await page.locator('#turnLog').textContent(), /Marrow Reserve adds 1 Bone\. You have 1\./);
   assert.equal(await page.locator('#tutorialOverlay').isVisible(), true);
-  assert.ok(await page.locator('.preview-card').count() >= 1);
+  const openingPreview = (await battleSnapshot(page)).preview;
+  assert.ok(openingPreview.length > 0);
+  await assertTwoRowBoard(page, 'opening tutorial', false);
   await page.screenshot({ path: 'artifacts/tutorial.png', fullPage: true });
   await activateFocused(page, '#tutorialContinue');
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().tutorial === 'select-squirrel');
@@ -288,6 +375,7 @@ try {
   assert.match(paymentLog, /You offer Squirrel for 1 Blood and gain 1 Bone\./);
   assert.match(paymentLog, /You play Stoat in lane 1\./);
   await activateFocused(page, '#tutorialContinue');
+  const deploymentObserved = page.waitForFunction(entries => entries.every(({ lane, key }) => document.querySelector(`#opponentRow > .lane[data-lane="${lane}"] > .card`)?.dataset.key === key) && document.querySelector('#previewRow').hidden && document.querySelector('#previewRow').childElementCount === 0, openingPreview);
   await activateFocused(page, '#bellButton');
   await page.waitForTimeout(150);
   assert.equal(await page.locator('#scaleReadout').innerText(), 'The balance is even');
@@ -295,7 +383,9 @@ try {
   await page.waitForFunction(() => document.querySelector('#turnLog')?.textContent.includes('Stoat attacks through open lane 1'));
   assert.equal(await page.locator('#scaleReadout').innerText(), 'You lead by 1');
   await page.screenshot({ path: 'artifacts/combat-playback.png', fullPage: true });
+  await deploymentObserved;
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().turn >= 2 && window.__BLOOD_BONE__.snapshot().tutorial === 'draw-squirrel');
+  await assertTwoRowBoard(page, 'tutorial after deployment', false);
   const combatLog = await page.locator('#turnLog').textContent();
   assert.match(combatLog, /You ring the bell\. Your creatures attack from left to right\./);
   assert.match(combatLog, /Stoat attacks through open lane 1 for 1 scale damage\./);
@@ -308,6 +398,16 @@ try {
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().tutorial), null);
   assert.equal(await page.locator('.hand-card:not(:disabled)').first().evaluate(element => element === document.activeElement), true, 'Tutorial completion must return focus to play');
   assert.ok((await page.evaluate(() => window.__BLOOD_BONE__.snapshot().audio.cueCount)) >= 12);
+  const beforeOpponentInspection = await battleSnapshot(page);
+  const deployedOpponent = page.locator('#opponentRow > .lane:has(.card)').first();
+  await deployedOpponent.focus();
+  await page.keyboard.press('Enter');
+  await assertInspectorCard(page, deployedOpponent);
+  assert.deepEqual(await battleSnapshot(page), beforeOpponentInspection, 'Deployed opponent inspection must preserve both combat rows and battle state');
+  await dismissInspector(page);
+  await page.waitForFunction(() => getComputedStyle(document.querySelector('#toast')).opacity === '0');
+  await page.locator('#menuButton').focus();
+  await captureScreen(page, 'artifacts/two-rows-desktop.png');
   await page.locator('#maneuverButton').click();
   await page.locator('#playerRow [data-lane="0"]').click();
   await page.locator('#playerRow [data-lane="1"]').click();
@@ -336,7 +436,7 @@ try {
     return element && element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
   });
   assert.equal(await page.locator('#turnLog').evaluate(element => element.scrollTop + element.clientHeight >= element.scrollHeight - 2), true);
-  await page.keyboard.press('Escape');
+  await escapeDialog(page, '#ledgerDialog');
   assert.equal(await page.locator('#ledgerDialog').isVisible(), false);
 
   // The full rules dialog explains numbers, lane targeting, special strikes, and scale math.
@@ -373,7 +473,7 @@ try {
   await openMenuAction(page, '#ledgerButton');
   assert.equal(await page.locator('#ledgerDialog').isVisible(), true);
   await captureScreen(page, 'artifacts/turn-ledger.png');
-  await page.keyboard.press('Escape');
+  await escapeDialog(page, '#ledgerDialog');
   assert.equal(await page.locator('#ledgerDialog').isVisible(), false);
   assert.equal(await page.locator('#menuButton').evaluate(element => element === document.activeElement), true);
 
@@ -448,16 +548,17 @@ try {
     await responsive.keyboard.press('Enter');
     await responsive.waitForFunction(() => window.__BLOOD_BONE__?.snapshot().scene === 'battle');
     await assertGameViewport(responsive, `${label} battle`);
-    assert.equal(await responsive.locator('.lane.player').count(), 4);
+    await assertTwoRowBoard(responsive, label);
     assert.equal(await responsive.locator('#ledgerDialog').isVisible(), false);
     for (const selector of ['#board', '#hand', '#bellButton', '#mainDeck', '#sideDeck']) await assertInViewport(responsive, selector, `${label} ${selector}`);
 
     const beforeInspection = await battleSnapshot(responsive);
-    const incoming = responsive.locator('.lane.preview:has(.card)').first();
+    const incoming = responsive.locator('#previewRow > .next-play.preview').first();
     if (touch) await incoming.tap();
     else if (viewport.width === 1440) { await incoming.focus(); await responsive.keyboard.press('Enter'); }
     else { await incoming.hover(); await incoming.click(); }
     await assertInspectorCard(responsive, incoming);
+    assert.match(await responsive.locator('#inspectorDetails .inspection-context').innerText(), /Next play · lane \d[\s\S]*Arrives after your attack\./);
     assert.deepEqual(await battleSnapshot(responsive), beforeInspection, 'Incoming inspection must preserve battle state');
     assert.equal(await responsive.locator('.hand-card[aria-pressed="true"]').count(), 0);
     await dismissInspector(responsive);
@@ -476,13 +577,13 @@ try {
     assert.equal(await responsive.locator('#cardInspector').isVisible(), false);
     assert.equal(await lastDeckCard.evaluate(element => element === document.activeElement), true, 'Deck inspection should return to its source card');
     assert.deepEqual(await battleSnapshot(responsive), beforeInspection);
-    await responsive.keyboard.press('Escape');
+    await escapeDialog(responsive, '#deckDialog');
     assert.equal(await responsive.locator('#deckDialog').isVisible(), false);
 
     await openPause(responsive);
     await assertInViewport(responsive, '#pauseDialog', `${label} pause menu`);
     assert.deepEqual(await battleSnapshot(responsive), beforeInspection, 'Opening the menu must preserve battle state');
-    await responsive.locator('#resumeButton').click();
+    await closeDialog(responsive, '#pauseDialog', () => responsive.locator('#resumeButton').click());
     assert.equal(await responsive.locator('#pauseDialog').isVisible(), false);
     assert.equal(await responsive.evaluate(() => {
       const active = document.activeElement;
@@ -523,7 +624,7 @@ try {
     await squirrel.focus();
     await responsive.keyboard.press('Enter');
     await openPause(responsive);
-    await responsive.keyboard.press('Escape');
+    await escapeDialog(responsive, '#pauseDialog');
     assert.equal(await responsive.locator('#pauseDialog').isVisible(), false);
     assert.equal(await squirrel.getAttribute('aria-pressed'), 'true', 'Menu dismissal must preserve the offering');
     await checkDialogKeyboard(responsive, '#rulesButton', '#rulesDialog', `${label} rules`);
@@ -535,6 +636,7 @@ try {
     await responsive.keyboard.press('Enter');
     assert.deepEqual(await responsive.evaluate(() => window.__BLOOD_BONE__.snapshot().playerCards), ['squirrel']);
     assert.equal(await lastLane.evaluate(element => element === document.activeElement), true, `${label} lane placement lost focus`);
+    if (viewport.width === 1440) await checkFocusedResize(responsive);
     await responsive.locator('#maneuverButton').focus();
     await responsive.keyboard.press('Enter');
     assert.equal(await responsive.locator('#actionTray').isVisible(), true);
@@ -551,6 +653,8 @@ try {
     await dismissInspector(responsive);
     await responsive.locator('#bellButton').click();
     await responsive.waitForFunction(turn => window.__BLOOD_BONE__.snapshot().turn > turn && !document.querySelector('#tableScreen').classList.contains('busy'), beforeScoutTurn);
+    await assertTwoRowBoard(responsive, `${label} after combat`);
+    if (viewport.width === 390 && touch) await captureScreen(responsive, 'artifacts/two-rows-mobile.png');
     await responsive.locator('#mainDeck').click();
     await assertInViewport(responsive, '#scoutDialog', `${label} Scout choices`);
     await assertChoiceAbilities(responsive, '#scoutChoices');
@@ -613,7 +717,7 @@ try {
   }
 
   assert.deepEqual(errors, []);
-  console.log('E2E OK: immersive viewport, tutorial/combat/scout, soundtrack/SFX, optional log/deck/menu, card inspector, bounded hand paging, run/retry/victory, keyboard/Escape, desktop/tablet/phone/landscape, console');
+  console.log('E2E OK: two-row board and next-play deployment, immersive viewport, tutorial/combat/scout, soundtrack/SFX, optional log/deck/menu, card inspector, bounded hand paging, run/retry/victory, keyboard/Escape, desktop/tablet/phone/landscape, console');
 } finally {
   await browser.close();
   server.kill('SIGTERM');
