@@ -11,7 +11,7 @@ import { MATCH_RULES } from './match-rules.js';
 import { advanceRound } from './round-coordinator.js';
 
 const ui = Object.fromEntries([
-  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','handPrevious','handNext','handPageReadout',
+  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','cardInspector','inspectorCard','inspectorDetails','inspectorClose','inspectButton','handPrevious','handNext','handPageReadout',
 ].map(id => [id, document.getElementById(id)]));
 
 const SIGILS = Object.freeze({
@@ -45,9 +45,18 @@ let busy = false;
 let toastTimer = null;
 let renderedScene = null;
 let handPage = 0;
+let suppressInspection = false;
+let inspectorPinned = false;
+let inspectorOrigin = null;
+let inspectorHideTimer = null;
+let lastInteraction = 'keyboard';
+let lastPointerPosition = null;
+let dismissedPointerPosition = null;
+let suppressPassiveHover = false;
 const dialogReturnFocus = new Map();
 const compactHand = window.matchMedia('(max-width: 600px)');
 const handLimit = () => compactHand.matches ? 5 : 7;
+const inspectorHome = ui.cardInspector.parentElement;
 const tutorial = new TutorialController();
 const audio = new AudioDirector();
 const ledger = new TurnLedger({ maxTurns: 8 });
@@ -108,7 +117,7 @@ function startBattle() {
   if (run.losses) ledger.add({ type: 'bones', reason: 'Broken Bones', amount: 2, total: startingBones, pluralSource: true });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; scoutOptions = []; busy = false;
-  handPage = 0;
+  handPage = 0; closeInspector();
   if (ui.scoutDialog.open) ui.scoutDialog.close();
   scene = 'battle'; render();
 }
@@ -179,7 +188,9 @@ function selectCard(cardId) {
 
 function focusWithoutInspection(target) {
   if (!target) return;
+  suppressInspection = true;
   target.focus({ preventScroll: true });
+  suppressInspection = false;
 }
 
 function ensureHandCardVisible(cardId) {
@@ -282,7 +293,7 @@ async function ringBell() {
   if (busy || !battle.hasDrawn) { showToast('DRAW BEFORE ENDING THE TURN'); return; }
   if (!tutorialAllows('ring-bell')) return;
   advanceTutorial('ring-bell');
-  busy = true; selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; render();
+  busy = true; closeInspector(); selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; render();
   ui.bellButton.classList.add('ringing'); setTimeout(() => ui.bellButton.classList.remove('ringing'), 760);
   audio.playCue('bell');
 
@@ -513,6 +524,8 @@ function renderBattle() {
   ui.actionTray.hidden = !card && !tacticMode; ui.offerButton.hidden = !(card && selectionStage === 'sacrifice' && offeredBlood() >= card.cost.amount);
   ui.selectionSummary.textContent = card ? selectionText(card) : tacticMode === 'maneuver' ? 'Maneuver · move to an adjacent empty lane' : tacticMode === 'mend' ? 'Mend · 2 Bones to restore up to 2 Health' : '';
   ui.cancelButton.textContent = tacticMode ? 'Cancel tactic' : 'Put card back';
+  ui.inspectButton.hidden = !card;
+  ui.inspectButton.disabled = busy || tutorial.active;
   ui.tableScreen.classList.toggle('busy', busy);
   if (focusedCardId) {
     focusHandCard(focusedCardId);
@@ -523,7 +536,7 @@ function renderBattle() {
 
 function changeHandPage(delta) {
   if (busy || tutorial.active || scene !== 'battle') return;
-
+  closeInspector();
   selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null;
   handPage += delta;
   render();
@@ -545,8 +558,64 @@ function renderTutorial() {
   requestAnimationFrame(() => document.querySelector(step.spotlight)?.classList.add('tutorial-focus'));
 }
 
-function openDialog(dialog, returnTarget) {
+function cardForControl(control) {
+  if (!control) return null;
+  if (control.classList.contains('hand-card')) return battle?.hand.find(card => card.id === control.dataset.id);
+  if (control.classList.contains('lane')) {
+    const lane = Number(control.dataset.lane);
+    return control.classList.contains('player') ? battle?.playerLanes[lane]
+      : control.classList.contains('opponent') ? battle?.opponentLanes[lane]
+      : preview.find(entry => entry.lane === lane)?.card;
+  }
+  if (control.dataset.id) return scoutOptions.find(card => card.id === control.dataset.id);
+  const template = CARD_LIBRARY[control.dataset.key];
+  if (template) return { ...template, key: control.dataset.key, maxHealth: template.health };
+  return null;
+}
 
+function inspectorFocusOrigin() {
+  if (inspectorOrigin?.isConnected) return inspectorOrigin;
+  if (inspectorOrigin?.classList.contains('hand-card')) return [...ui.hand.querySelectorAll('.hand-card')].find(card => card.dataset.id === inspectorOrigin.dataset.id);
+  if (inspectorOrigin?.classList.contains('lane')) {
+    const side = ['player', 'opponent', 'preview'].find(value => inspectorOrigin.classList.contains(value));
+    return document.querySelector(`.lane.${side}[data-lane="${inspectorOrigin.dataset.lane}"]`);
+  }
+  return null;
+}
+
+function closeInspector(restoreFocus = false) {
+  clearTimeout(inspectorHideTimer);
+  if (!ui.cardInspector) return;
+  if (!ui.cardInspector.hidden || restoreFocus) {
+    suppressPassiveHover = true;
+    dismissedPointerPosition = lastPointerPosition;
+  }
+  const origin = restoreFocus ? inspectorFocusOrigin() : null;
+  ui.cardInspector.hidden = true; inspectorPinned = false;
+  if (ui.cardInspector.parentElement !== inspectorHome) inspectorHome.append(ui.cardInspector);
+  inspectorOrigin = null;
+  if (origin && !origin.disabled) focusWithoutInspection(origin);
+}
+
+function showInspector(card, origin, pinned = false) {
+  if (!card || busy || tutorial.active || suppressInspection || (inspectorPinned && !pinned)) return;
+  clearTimeout(inspectorHideTimer);
+  const activeDialog = origin?.closest('dialog[open]');
+  if (activeDialog) activeDialog.append(ui.cardInspector);
+  else if (document.querySelector('dialog[open]')) return;
+  else if (ui.cardInspector.parentElement !== inspectorHome) inspectorHome.append(ui.cardInspector);
+  inspectorOrigin = origin; inspectorPinned = pinned;
+  ui.inspectorCard.innerHTML = cardHtml(card, 'inspected-card');
+  const cost = card.cost.type === 'free' ? 'Free' : `${card.cost.amount} ${card.cost.type === 'blood' ? 'Blood' : 'Bones'}`;
+  const sigils = sigilsOf(card).filter(sigil => SIGILS[sigil]);
+  ui.inspectorDetails.innerHTML = `<h2>${escapeHtml(card.name)}</h2><dl class="inspection-stats"><div><dt>Cost</dt><dd>${cost}</dd></div><div><dt>Power</dt><dd>${card.power}</dd></div><div><dt>Health</dt><dd>${card.health} / ${card.maxHealth ?? card.health}</dd></div></dl>${sigils.length ? `<ul class="inspection-sigils">${sigils.map(sigil => `<li>${icon(sigil)}<div><strong>${SIGILS[sigil][1]}</strong><p>${SIGILS[sigil][2]}</p></div></li>`).join('')}</ul>` : '<p class="inspection-plain">No sigils.</p>'}`;
+  ui.cardInspector.hidden = false;
+  ui.cardInspector.dataset.pinned = String(pinned);
+  if (pinned) focusWithoutInspection(ui.inspectorClose);
+}
+
+function openDialog(dialog, returnTarget) {
+  closeInspector();
   for (const open of document.querySelectorAll('dialog[open]')) if (open !== dialog) open.close();
   dialogReturnFocus.set(dialog, returnTarget);
   if (!dialog.open) dialog.showModal();
@@ -621,6 +690,7 @@ function renderResult() {
 
 function render() {
   const sceneChanged = renderedScene !== scene;
+  if (sceneChanged || busy) closeInspector();
   if (sceneChanged) for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
   ui.titleScreen.hidden = scene !== 'title'; ui.tableScreen.hidden = scene !== 'battle'; ui.rewardScreen.hidden = scene !== 'reward';
   ui.resultScreen.hidden = !['victory', 'retry', 'defeat'].includes(scene);
@@ -654,13 +724,70 @@ ui.ledgerButton.addEventListener('click', () => {
 });
 for (const dialog of [ui.pauseDialog, ui.rulesDialog, ui.audioDialog, ui.ledgerDialog]) dialog.addEventListener('close', () => {
   if (document.querySelector('dialog[open]')) return;
-
+  closeInspector();
   const returnTarget = dialogReturnFocus.get(dialog);
   if (returnTarget?.closest('dialog')?.open === false) focusWithoutInspection(ui.menuButton);
   else if (returnTarget?.getClientRects().length) focusWithoutInspection(returnTarget);
 });
 ui.handPrevious.addEventListener('click', () => changeHandPage(-1));
 ui.handNext.addEventListener('click', () => changeHandPage(1));
+ui.inspectButton.addEventListener('click', () => showInspector(selectedCard(), ui.inspectButton, true));
+ui.inspectorClose.addEventListener('click', () => closeInspector(true));
+
+const inspectionControl = target => target?.closest('.hand-card, .lane, .deck-card');
+for (const container of [ui.hand, ui.playerRow, ui.opponentRow, ui.previewRow]) {
+  container.addEventListener('pointerover', event => {
+    if (event.pointerType === 'touch' || suppressPassiveHover) return;
+    const control = inspectionControl(event.target);
+    if (!control || control.contains(event.relatedTarget)) return;
+    showInspector(cardForControl(control), control);
+  });
+  container.addEventListener('pointerout', event => {
+    const control = inspectionControl(event.target);
+    if (!control || control.contains(event.relatedTarget) || ui.cardInspector.contains(event.relatedTarget) || inspectorPinned || document.activeElement === control) return;
+    clearTimeout(inspectorHideTimer); inspectorHideTimer = setTimeout(() => closeInspector(), 160);
+  });
+  container.addEventListener('focusin', event => {
+    if (suppressInspection || lastInteraction === 'touch') return;
+    suppressPassiveHover = false;
+    const control = inspectionControl(event.target);
+    const card = cardForControl(control);
+    if (card) showInspector(card, control);
+    else if (!inspectorPinned) closeInspector();
+  });
+  container.addEventListener('focusout', event => {
+    const control = inspectionControl(event.target);
+    if (!control) return;
+    queueMicrotask(() => {
+      if (!inspectorPinned && inspectorOrigin === control && !ui.cardInspector.contains(document.activeElement) && !control.contains(document.activeElement) && (lastInteraction === 'keyboard' || !control.matches(':hover'))) closeInspector();
+    });
+  });
+  container.addEventListener('click', event => {
+    const control = inspectionControl(event.target);
+    if (control?.classList.contains('deck-card') || control?.classList.contains('opponent') || control?.classList.contains('preview')) showInspector(cardForControl(control), control, true);
+  });
+}
+ui.cardInspector.addEventListener('pointerenter', () => clearTimeout(inspectorHideTimer));
+ui.cardInspector.addEventListener('pointerleave', () => {
+  if (!inspectorPinned && !ui.cardInspector.contains(document.activeElement)) inspectorHideTimer = setTimeout(() => closeInspector(), 160);
+});
+ui.cardInspector.addEventListener('focusout', () => {
+  queueMicrotask(() => {
+    if (!inspectorPinned && !ui.cardInspector.contains(document.activeElement) && !inspectionControl(document.activeElement)) closeInspector();
+  });
+});
+document.addEventListener('pointerdown', event => {
+  lastInteraction = event.pointerType === 'touch' ? 'touch' : 'pointer';
+  lastPointerPosition = { x: event.clientX, y: event.clientY };
+}, true);
+document.addEventListener('pointermove', event => {
+  lastPointerPosition = { x: event.clientX, y: event.clientY };
+  if (!suppressPassiveHover || event.pointerType === 'touch') return;
+  if (dismissedPointerPosition && Math.hypot(event.clientX - dismissedPointerPosition.x, event.clientY - dismissedPointerPosition.y) <= 3) return;
+  suppressPassiveHover = false;
+  const control = inspectionControl(event.target);
+  if (control) showInspector(cardForControl(control), control);
+});
 ui.muteButton.addEventListener('click', () => { audio.toggleMute(); renderAudioControls(); });
 ui.musicVolume.addEventListener('input', event => { audio.setMusicVolume(Number(event.target.value) / 100); renderAudioControls(); });
 ui.sfxVolume.addEventListener('input', event => { audio.setSfxVolume(Number(event.target.value) / 100); audio.playCue('ui'); renderAudioControls(); });
@@ -679,7 +806,10 @@ ui.tutorialContinue.addEventListener('click', () => {
 });
 ui.tutorialSkip.addEventListener('click', () => { tutorial.skip(); render(); showToast('TUTORIAL SKIPPED · REPLAY IT FROM THE RULEBOOK'); });
 document.addEventListener('keydown', event => {
+  lastInteraction = 'keyboard';
+  if (event.key !== 'Escape') suppressPassiveHover = false;
   if (event.key !== 'Escape' || event.defaultPrevented) return;
+  if (!ui.cardInspector.hidden) { event.preventDefault(); closeInspector(true); return; }
   const dialog = document.querySelector('dialog[open]');
   if (dialog) { if (dialog !== ui.scoutDialog) { event.preventDefault(); dialog.close(); } return; }
   if (scene !== 'battle' || busy || tutorial.active) return;
@@ -691,7 +821,7 @@ window.addEventListener('resize', () => {
   clearTimeout(handResizeTimer);
   handResizeTimer = setTimeout(() => {
     if (scene !== 'battle') return;
-
+    closeInspector(true);
     const focusedCardId = document.activeElement?.closest('.hand-card')?.dataset.id;
     if (focusedCardId) ensureHandCardVisible(focusedCardId);
     render();

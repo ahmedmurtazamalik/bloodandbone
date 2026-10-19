@@ -59,7 +59,8 @@
         <div class="hand-wrap"><p id="instruction" class="hand-instruction" aria-live="polite">Select a card or ring the bell.</p><div id="hand" class="hand" aria-label="Your hand"></div><div class="hand-pages"><button id="handPrevious" aria-label="Previous hand cards">‹</button><span id="handPageReadout"></span><button id="handNext" aria-label="Next hand cards">›</button></div></div>
       </section>
 
-      <section id="actionTray" class="action-tray" hidden><p id="selectionSummary"></p><div><button id="offerButton" class="wax-button" hidden>Confirm offering</button><button id="cancelButton" class="quiet-button">Cancel</button></div></section>
+      <section id="actionTray" class="action-tray" hidden><p id="selectionSummary"></p><div><button id="inspectButton" class="quiet-button">Inspect</button><button id="offerButton" class="wax-button" hidden>Confirm offering</button><button id="cancelButton" class="quiet-button">Cancel</button></div></section>
+      <aside id="cardInspector" class="card-inspector" hidden aria-label="Creature details"><button id="inspectorClose" aria-label="Close card details">×</button><div id="inspectorCard"></div><div id="inspectorDetails"></div></aside>
     </section>
 
     <dialog id="pauseDialog" class="pause-dialog" aria-labelledby="pauseTitle"><h2 id="pauseTitle">At the table</h2><div class="pause-actions"><button id="resumeButton" class="wood-button primary">Resume</button><button id="ledgerButton" class="wood-button">Battle record</button><button id="rulesButton" class="wood-button" aria-label="Open rules and sigils">Rules & sigils</button><button id="audioButton" class="wood-button" aria-label="Open sound controls"><span id="audioIcon" aria-hidden="true">♪</span> Sound</button></div></dialog>

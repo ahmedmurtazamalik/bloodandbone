@@ -177,14 +177,14 @@ button:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus)
 .action-tray { position: absolute; left: 50%; top: 74px; transform: translateX(-50%); width: min(630px,60vw); padding: 8px 13px; display: flex; align-items: center; justify-content: space-between; gap: 18px; z-index: 12; color: #e5cca0; background: #1c190ee8; border-top: 1px solid #997f46; border-bottom: 1px solid #997f4638; }
 .action-tray p { margin: 0; font-size: 13px; line-height: 1.4; }.action-tray > div { display: flex; gap: 12px; align-items: center; }.action-tray .quiet-button { font-size: 12px; white-space: nowrap; }
 .wax-button { min-height: 36px; padding: 9px 13px; color: #f2d5ad; background: #7f3025; border: 1px solid #b16544; border-radius: 0; font: 700 13px var(--display); cursor: pointer; white-space: nowrap; box-shadow: 0 3px #33170e; }.wax-button:hover { background: #a4402f; }
-
-
-
-
-
-
-
-
+.card-inspector { position: absolute; left: 24px; top: 115px; z-index: 28; width: 265px; max-height: calc(100% - 150px); padding: 21px 20px; color: #352719; background: #dfc99d; border: 3px solid #554022; box-shadow: 5px 8px 0 #21170e, 0 14px 35px #0009; overflow: auto; scrollbar-width: thin; scrollbar-color: #846a43 #d2bb90; }
+.card-inspector[data-pinned='false'] { pointer-events: none; }
+#inspectorClose { position: absolute; top: 5px; right: 7px; width: 28px; height: 28px; border: 0; color: #49331e; background: transparent; font: 28px Georgia; cursor: pointer; z-index: 4; }
+#inspectorClose { pointer-events: auto; }
+#inspectorCard { display: flex; justify-content: center; margin-top: 6px; }.card-inspector .card { --card-w: 156px; box-shadow: 1px 4px 0 #7c5c37, 2px 7px 12px #67451c66; }
+#inspectorDetails h2 { font: 700 22px var(--display); margin: 22px 0 12px; }
+.inspection-stats { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 15px; border-top: 1px solid #977547; border-bottom: 1px solid #977547; padding: 10px 0; }.inspection-stats dt { font-size: 11px; color: #6a5032; }.inspection-stats dd { margin: 5px 0 0; font: 700 17px var(--display); }
+.inspection-sigils { list-style: none; padding: 0; margin: 0; }.inspection-sigils li { display: flex; gap: 10px; padding-top: 9px; }.inspection-sigils .card-icon { width: 24px; height: 24px; }.inspection-sigils strong { font: 700 15px var(--display); }.inspection-sigils p,.inspection-plain { margin: 5px 0 0; font-size: 12px; line-height: 1.55; color: #5c442b; }
 
 /* Book pages and game choices, rather than permanent columns. */
 dialog { max-width: calc(100% - 32px); max-height: calc(100dvh - 32px); overflow: auto; border-radius: 0; box-shadow: 0 15px 60px #000c; }
@@ -233,7 +233,7 @@ body.tutorial-running::after { content: ''; position: fixed; inset: 0; z-index: 
   .bone-reserve { left: 5%; top: 60%; }.bone-bowl { width: 65px; height: 40px; }.bone-reserve strong { font-size: 28px; }
   .bell { right: 4%; top: 59%; }.tactic-controls { left: 18px; top: 92px; gap: 7px; }.tactic-controls button { font-size: 11px; }
   .hand-table { width: 60vw; }.deck-pile { left: -82px; width: 72px; }.deck-pile.side { right: -82px; }.deck-stack { width: 57px; height: 79px; left: 6px; }.deck-pile em { bottom: 25px; }.deck-pile small { bottom: 10px; font-size: 9px; }
-  .tutorial-coach { right: 15px; width: 245px; padding: 17px; }
+  .card-inspector { width: 245px; left: 15px; top: 100px; }.tutorial-coach { right: 15px; width: 245px; padding: 17px; }
 }
 @media (max-width: 700px) and (min-height: 501px) {
   .table-screen { --lane-card-w: clamp(60px,17vw,85px); --hand-card-w: clamp(90px,23vw,125px); }
@@ -251,7 +251,7 @@ body.tutorial-running::after { content: ''; position: fixed; inset: 0; z-index: 
   .tactic-controls { top: auto; bottom: calc(var(--hand-card-w) * 1.44 + 91px); left: 14px; flex-direction: row; gap: 6px; }.tactic-controls button { min-height: 32px; padding: 6px 8px; font-size: 10px; }
   .bell { top: auto; bottom: calc(var(--hand-card-w) * 1.44 + 81px); right: 12px; width: 91px; height: 58px; }.bell-dome { top: 10px; left: 30px; width: 39px; height: 24px; border-width: 1px; }.bell-plunger { top: 3px; left: 45px; width: 9px; height: 11px; border-width: 1px; }.bell-base { top: 31px; left: 24px; width: 52px; height: 8px; border-width: 1px; }.bell b { bottom: 0; font-size: 11px; }
   .action-tray { top: auto; bottom: calc(var(--hand-card-w) * 1.44 + 89px); width: calc(100% - 24px); padding: 8px 10px; gap: 4px; flex-wrap: wrap; }.action-tray p { font-size: 11px; width: 100%; }.action-tray > div { justify-content: flex-end; width: 100%; gap: 14px; }.action-tray .quiet-button { font-size: 11px; padding-block: 6px; }.action-tray .wax-button { min-height: 28px; font-size: 11px; padding: 6px 10px; }
-
+  .card-inspector { left: 50%; top: 50%; transform: translate(-50%,-50%); width: min(320px,calc(100% - 30px)); max-height: calc(100% - 28px); padding: 22px; z-index: 45; }.card-inspector .card { --card-w: 150px; }#inspectorDetails h2 { font-size: 22px; margin-top: 15px; }.inspection-sigils p,.inspection-plain { font-size: 13px; }
   .tutorial-coach { right: 10px; top: 62px; width: calc(100% - 20px); padding: 12px 14px; }.tutorial-coach > p:first-of-type { font-size: 10px; margin-bottom: 4px; }.tutorial-coach h2 { font-size: 18px; }.tutorial-coach > p:nth-of-type(2) { margin: 6px 0 7px; font-size: 11px; line-height: 1.4; }.tutorial-coach > div:last-child { justify-content: flex-end; gap: 16px; }.tutorial-coach .wax-button { min-height: 28px; font-size: 12px; padding: 6px 11px; }.tutorial-coach .quiet-button { font-size: 11px; padding: 5px; }.tutorial-running .action-tray { z-index: 37; }
 
   .title-engraving { width: 160px; height: 70px; }.title-screen h1 { font-size: clamp(36px,10vw,63px); margin-bottom: 35px; }.title-menu { width: 210px; gap: 17px; }.title-plaque { padding-bottom: 6vh; }
@@ -263,7 +263,7 @@ body.tutorial-running::after { content: ''; position: fixed; inset: 0; z-index: 
 }
 @media (max-height: 700px) and (min-width: 701px) {
   .table-screen { --lane-card-w: 11.8vh; --hand-card-w: 17.8vh; }.felt-board { top: 17vh; }.opponent-presence { top: 54px; height: 84px; }.table-hud { height: 65px; }.opponent-copy { top: 15px; }.turn-plaque { top: 18px; }.menu-button { top: 17px; }
-  .scale-stage { top: 31%; }.bone-reserve { top: 57%; }.bell { top: 55%; }.hand-instruction { font-size: 12px; }.tutorial-coach { top: 80px; padding: 15px; }.tutorial-coach h2 { font-size: 21px; }.tutorial-coach > p:nth-of-type(2) { font-size: 12px; }
+  .scale-stage { top: 31%; }.bone-reserve { top: 57%; }.bell { top: 55%; }.hand-instruction { font-size: 12px; }.card-inspector { top: 80px; max-height: calc(100% - 100px); }.tutorial-coach { top: 80px; padding: 15px; }.tutorial-coach h2 { font-size: 21px; }.tutorial-coach > p:nth-of-type(2) { font-size: 12px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
   .table-screen { --lane-card-w: 12.8vh; --hand-card-w: 20vh; }
@@ -277,7 +277,7 @@ body.tutorial-running::after { content: ''; position: fixed; inset: 0; z-index: 
   .deck-pile { width: 55px; height: 80px; left: -65px; bottom: 10px; }.deck-pile.side { right: -65px; }.deck-stack { width: 36px; height: 48px; left: 8px; top: 0; }.deck-pile > b { width: 18px; height: 18px; top: -6px; font-size: 10px; }.deck-pile em { bottom: 11px; font-size: 10px; }.deck-pile small { display: none; }.card-back::before { width: 18px; height: 30px; }.card-back::after { width: 16px; height: 27px; }.card-back u { width: 10px; height: 12px; }.side .card-back u { width: 16px; height: 7px; }
   .action-tray { top: 46px; width: 48vw; padding: 6px 9px; gap: 6px; }.action-tray p { font-size: 10px; }.action-tray > div { gap: 8px; }.action-tray .quiet-button { font-size: 10px; padding-block: 5px; }.action-tray .wax-button { padding: 6px; min-height: 26px; font-size: 10px; }
   .tutorial-coach { top: 55px; right: 14px; width: 195px; padding: 12px; }.tutorial-coach > p:first-of-type { font-size: 10px; margin-bottom: 5px; }.tutorial-coach h2 { font-size: 18px; }.tutorial-coach > p:nth-of-type(2) { font-size: 11px; margin: 8px 0; line-height: 1.4; }.tutorial-coach .quiet-button { font-size: 10px; }.tutorial-coach .wax-button { font-size: 11px; padding: 6px 8px; min-height: 28px; }
-
+  .card-inspector { top: 12px; left: 12px; width: 260px; max-height: calc(100% - 24px); padding: 20px; }.card-inspector .card { --card-w: 115px; }#inspectorDetails h2 { margin-top: 14px; }
   .title-plaque { padding: 0; }.title-engraving { width: 105px; height: 46px; margin-bottom: 8px; }.title-screen h1 { font-size: 42px; margin-bottom: 17px; }.title-menu { gap: 10px; width: 205px; }.title-menu .wood-button { min-height: 36px; padding: 8px 20px; font-size: 16px; }.title-options { margin-top: 0; }.title-options .quiet-button { font-size: 12px; padding: 5px; }
   .reward-card { width: clamp(118px,22vw,165px); }.reward-card .card { --card-w: 85px; }.reward-card .card-name { font-size: 11px; height: 25px; padding-right: 20px; }.reward-card .card-cost { font-size: 16px; right: 4px; top: 4px; }.reward-card .portrait { flex: 1; height: auto; min-height: 28px; }.reward-card .stats { font-size: 22px; }.reward-card .sigils { height: 16px; }
   .reward-cloth h2,.result-plaque h2 { font-size: 29px; }.reward-cloth > p,.result-plaque > p { font-size: 12px; margin-block: 10px; }.reward-choices { margin-top: 20px; gap: 20px; }.scout-dialog { padding: 12px 25px; }.scout-dialog h2 { font-size: 26px; margin-bottom: 10px; }.scout-dialog > p { font-size: 12px; }.scout-choices { margin-top: 12px; }.pause-dialog { padding: 22px 30px; }.pause-dialog h2 { font-size: 24px; margin-bottom: 18px; }.pause-actions { gap: 9px; }.pause-actions .wood-button { min-height: 32px; padding: 6px 12px; font-size: 14px; }.pause-actions .quiet-button { font-size: 12px; margin: 0; padding: 5px; }
