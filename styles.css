@@ -60,20 +60,30 @@ button:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus)
 .opponent-presence { position: absolute; width: 210px; height: 114px; left: 50%; top: 66px; transform: translateX(-50%); opacity: .7; pointer-events: none; }
 .opponent-presence svg { width: 100%; height: 100%; }
 
-/* Four aligned card positions, drawn on wood instead of widget boxes. */
-.felt-board { position: absolute; top: 14vh; left: 50%; width: calc(var(--lane-card-w) * 4 + 96px); transform: translateX(-50%); z-index: 3; }
+/* Two combat rows; next plays are small annotations attached to opponent lanes. */
+.felt-board { position: absolute; top: 16vh; left: 50%; width: calc(var(--lane-card-w) * 4 + 96px); transform: translateX(-50%); z-index: 3; }
 .lane-row { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 24px; align-items: center; }
 .lane { position: relative; width: 100%; min-height: calc(var(--lane-card-w) * 1.44 + 8px); display: grid; place-items: center; padding: 4px; border: 0; border-radius: 0; color: inherit; background: transparent; }
 .lane::before { content: ''; position: absolute; inset: 2px; pointer-events: none; background: linear-gradient(#b4a2784d,#b4a2784d) left top / 19px 2px no-repeat, linear-gradient(#b4a2784d,#b4a2784d) left top / 2px 19px no-repeat, linear-gradient(#b4a2784d,#b4a2784d) right bottom / 19px 2px no-repeat, linear-gradient(#b4a2784d,#b4a2784d) right bottom / 2px 19px no-repeat; }
 .lane::after { content: attr(data-number); position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); color: #a3997566; font: 14px var(--display); pointer-events: none; }
 .lane:has(.card)::after { display: none; }
 .empty-slot { width: 60%; height: 75%; display: block; border: 1px solid #a4996c0c; }
-.preview-row .lane { min-height: calc(var(--lane-card-w) * .91 + 6px); }
-.preview-row .lane::before { opacity: .8; background-size: 12px 1px,1px 12px,12px 1px,1px 12px; }
-.preview-row .lane::after { bottom: 6px; color: #b8a780; }
+
+.opponent-field { --intent-space: 58px; position: relative; padding-top: var(--intent-space); }
+.opponent-intents { position: absolute; inset: 0 0 auto; height: var(--intent-space); display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 24px; align-items: start; pointer-events: none; z-index: 5; }
+.next-play { position: relative; grid-row: 1; justify-self: center; display: grid; grid-template-columns: auto 1fr; gap: 3px 5px; width: 100%; max-width: 130px; min-width: 0; padding: 5px 6px; color: #32291a; background: #b9a47c; border: 1px solid #6f5a37; border-bottom: 2px solid #78603a; border-radius: 0; box-shadow: 1px 2px 3px #0006; text-align: left; cursor: help; pointer-events: auto; }
+.next-play::after { content: ''; position: absolute; top: 100%; left: 50%; height: calc(var(--intent-space) - 100%); min-height: 3px; border-left: 1px dashed #ad9564; pointer-events: none; }
+.next-play::before { content: ''; position: absolute; top: calc(var(--intent-space) - 4px); left: calc(50% - 3px); width: 5px; height: 5px; border-bottom: 1px solid #b59c6b; border-right: 1px solid #b59c6b; transform: rotate(45deg); pointer-events: none; }
+.next-play-label { align-self: center; color: #5e4b2e; font: 11px var(--body); }
+.next-play-name { grid-column: 1 / -1; min-width: 0; font: 700 13px/1.15 var(--display); overflow-wrap: anywhere; }
+.next-play-stats { display: flex; justify-content: flex-end; gap: 5px; font: 700 13px/1 var(--display); }
+.next-play-stats > span { display: flex; align-items: center; gap: 2px; }.next-play-stats .health { color: #7b2b22; }
+.next-play-stats .card-icon { width: 10px; height: 12px; }
+.next-play:hover { background: #d0bc93; }.next-play:focus-visible { outline-offset: 3px; }
+
 .board-rail { display: flex; justify-content: space-between; margin: 0 4px 7px; color: #b4a486; font-size: 12px; text-shadow: 0 1px 3px #000; }
 .board-rail b { font-size: 11px; font-weight: 400; color: #9d9277; }
-.lane-divider { height: 24px; color: #a29474; font-size: 11px; padding-left: 4px; display: flex; align-items: center; }
+
 .field-divider { height: 18px; margin-inline: 5px; background: linear-gradient(90deg, transparent, #b3a27b30 35%, #b3a27b30 65%, transparent) center / 100% 1px no-repeat; }
 .bottom-rail { margin-top: 7px; margin-bottom: 0; font-size: 11px; }
 .lane.player.can-target { cursor: pointer; }
@@ -106,13 +116,6 @@ button:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus)
 .stats .power { color: #312a1c; }.stats .health { color: #8d3025; }
 .card-icon { display: inline-block; flex-shrink: 0; width: 20px; height: 20px; fill: currentColor; vertical-align: middle; }
 .lane .card { --card-w: var(--lane-card-w); }
-.lane .preview-card { --card-w: calc(var(--lane-card-w) * .61); }
-.lane .preview-card .card-name { font-size: 10px; height: 20px; padding-right: 17px; }
-.lane .preview-card .card-cost { top: 4px; right: 4px; font-size: 13px; }
-.lane .preview-card .card-cost.free { font-size: 8px; }
-.lane .preview-card .stats { font-size: 18px; }
-.lane .preview-card .sigils { height: 13px; }.lane .preview-card .sigil { width: 13px; height: 13px; }
-.lane .preview-card .portrait { flex: 1; height: auto; min-height: 22px; }
 
 /* A brass balance and a bowl of Bones. */
 .scale-stage { position: absolute; left: calc(50% - 520px); top: 37%; width: 230px; z-index: 4; text-align: center; }
@@ -183,6 +186,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 3px solid var(--focus)
 #inspectorClose { pointer-events: auto; }
 #inspectorCard { display: flex; justify-content: center; margin-top: 6px; }.card-inspector .card { --card-w: 156px; box-shadow: 1px 4px 0 #7c5c37, 2px 7px 12px #67451c66; }
 #inspectorDetails h2 { font: 700 22px var(--display); margin: 22px 0 12px; }
+.inspection-context { margin: 16px 0 -10px; color: #6a5032; font-size: 12px; line-height: 1.5; }
 .inspection-stats { display: flex; justify-content: space-between; gap: 8px; margin: 0 0 15px; border-top: 1px solid #977547; border-bottom: 1px solid #977547; padding: 10px 0; }.inspection-stats dt { font-size: 11px; color: #6a5032; }.inspection-stats dd { margin: 5px 0 0; font: 700 17px var(--display); }
 .inspection-sigils { list-style: none; padding: 0; margin: 0; }.inspection-sigils li { display: flex; gap: 10px; padding-top: 9px; }.inspection-sigils .card-icon { width: 24px; height: 24px; }.inspection-sigils strong { font: 700 15px var(--display); }.inspection-sigils p,.inspection-plain { margin: 5px 0 0; font-size: 12px; line-height: 1.55; color: #5c442b; }
 
@@ -240,9 +244,11 @@ body.tutorial-running::after { content: ''; position: fixed; inset: 0; z-index: 
   .turn-plaque { left: 12px; top: 14px; }.turn-plaque span { font-size: 13px; }.turn-plaque strong { font-size: 10px; max-width: 105px; }.opponent-copy { top: 14px; }.opponent-copy h2 { font-size: 16px; }.opponent-copy > p:first-child { font-size: 10px; margin-bottom: 4px; }.menu-button { top: 14px; right: 12px; padding: 6px 8px; font-size: 11px; }
   .opponent-presence { display: none; }.table-surface { inset: 12% 2% 22%; }
   .felt-board { top: 16vh; width: calc(100% - 24px); }.lane-row { gap: 8px; }.lane { padding: 2px; min-height: calc(var(--lane-card-w) * 1.55 + 4px); }.lane .card { height: calc(var(--lane-card-w) * 1.55); padding: 4px; }.lane::before { background-size: 13px 2px,2px 13px,13px 2px,2px 13px; }.lane::after { font-size: 12px; }
+  .opponent-intents { gap: 8px; }.next-play { padding: 4px; gap: 2px 3px; }.next-play-label { font-size: 10px; }.next-play-name { font-size: 11px; }.next-play-stats { font-size: 12px; gap: 4px; }.next-play-stats .card-icon { width: 9px; height: 11px; }
   .lane .card-name { font-size: 10px; height: 23px; padding-right: 15px; }.lane .card-cost { right: 4px; top: 5px; font-size: 13px; height: 15px; gap: 1px; }.lane .card-cost .card-icon { width: 10px; height: 13px; }.lane .card-cost.free { font-size: 8px; }.lane .portrait { height: calc(var(--lane-card-w) * .46); }.lane .sigils { height: 15px; gap: 1px; }.lane .sigil { width: 14px; height: 14px; }.lane .stats { font-size: 21px; }.lane .stats .card-icon { width: 10px; height: 13px; }.lane .stats > span { gap: 1px; }
-  .preview-row .lane { min-height: 63px; }.lane .preview-card { --card-w: 45px; height: 59px; padding: 3px; }.lane .preview-card .card-name { display: none; }.lane .preview-card .card-cost { top: 3px; right: 3px; font-size: 11px; height: 12px; }.lane .preview-card .card-cost .card-icon { width: 8px; height: 9px; }.lane .preview-card .portrait { margin-top: 11px; flex: 1; height: 19px; min-height: 12px; }.lane .preview-card .sigils { display: none; }.lane .preview-card .stats { font-size: 16px; }.lane .preview-card .stats .card-icon { width: 8px; height: 9px; }
-  .board-rail { font-size: 11px; margin-bottom: 5px; }.board-rail b { font-size: 10px; }.lane-divider { height: 19px; font-size: 10px; }.field-divider { height: 12px; }.bottom-rail { margin-top: 4px; font-size: 10px; }
+
+  .board-rail { font-size: 11px; margin-bottom: 5px; }.board-rail b { font-size: 10px; }
+  .field-divider { height: 12px; }.bottom-rail { margin-top: 4px; font-size: 10px; }
   .scale-stage { top: 54px; left: 12px; width: 117px; height: 61px; }.balance { position: absolute; top: -6px; left: 16px; transform: scale(.36); transform-origin: left top; margin: 0; }.scale-copy { position: absolute; left: 0; right: 0; top: 45px; margin: 0; }.scale-copy strong { font-size: 12px; }
   .bone-reserve { left: auto; right: 14px; top: 67px; gap: 6px; }.bone-bowl { width: 34px; height: 22px; border-width: 2px; }.bone-pile { left: 3px; top: 4px; transform: scale(.55); transform-origin: left top; }.bone-reserve strong { display: inline; font-size: 22px; }.bone-reserve span { display: inline; font-size: 11px; margin-left: 5px; }
   .hand-table { width: calc(100% - 28px); bottom: 18px; height: calc(var(--hand-card-w) * 1.44 + 32px); }.hand { --overlap: clamp(20px,calc((var(--hand-count) - 3) * 15px + 20px),55px); padding-bottom: 21px; }.hand-card:hover:not(:disabled),.hand-card:focus-visible:not(:disabled) { transform: translateY(calc(var(--fan-rise,0px) - 18px)) rotate(0); }.hand-card.selected { transform: translateY(-18px) rotate(0); }.hand .card-name { font-size: 12px; height: 28px; padding-right: 21px; }.hand .card-cost { font-size: 17px; top: 5px; right: 5px; }.hand .stats { font-size: 25px; }.hand .portrait { flex: 1; height: auto; min-height: 38px; }.hand .sigils { height: 18px; }.hand .sigil { width: 17px; height: 17px; }.hand .card-cost.free { font-size: 9px; }
@@ -268,9 +274,12 @@ body.tutorial-running::after { content: ''; position: fixed; inset: 0; z-index: 
 @media (max-height: 500px) and (orientation: landscape) {
   .table-screen { --lane-card-w: 12.8vh; --hand-card-w: 20vh; }
   .table-hud { height: 45px; }.turn-plaque { left: 14px; top: 9px; }.turn-plaque span { font-size: 12px; }.turn-plaque strong { font-size: 10px; margin-top: 3px; }.opponent-copy { top: 8px; }.opponent-copy h2 { font-size: 16px; }.opponent-copy > p:first-child { font-size: 10px; margin-bottom: 3px; }.menu-button { right: 14px; top: 10px; font-size: 11px; padding: 5px 8px; }.opponent-presence { display: none; }
-  .felt-board { top: 50px; width: calc(var(--lane-card-w) * 4 + 60px); }.lane-row { gap: 15px; }.lane { min-height: calc(var(--lane-card-w) * 1.38); padding: 1px; }.lane .card { height: calc(var(--lane-card-w) * 1.38); padding: 4px; }.lane .card-name { font-size: 10px; height: 21px; padding-right: 16px; }.lane .portrait { flex: 1; height: auto; min-height: 25px; }.lane .stats { font-size: 19px; }.lane .sigils { height: 12px; }.lane .sigil { width: 12px; height: 12px; }.lane .card-cost { top: 3px; right: 3px; font-size: 13px; }.preview-row .lane { min-height: 48px; }.lane .preview-card { --card-w: 33px; height: 45px; padding: 2px; }.lane .preview-card .card-name,.lane .preview-card .sigils { display: none; }.lane .preview-card .card-cost { font-size: 9px; height: 9px; top: 2px; right: 2px; }.lane .preview-card .card-cost .card-icon { width: 7px; height: 8px; }.lane .preview-card .portrait { margin-top: 7px; min-height: 10px; }.lane .preview-card .stats { font-size: 12px; }.lane .preview-card .stats .card-icon { display: none; }
-  .board-rail { font-size: 9px; margin-bottom: 3px; }.board-rail b { font-size: 9px; }.lane-divider { height: 12px; font-size: 9px; }.field-divider { height: 8px; }.bottom-rail { display: none; }
-  .preview-row .lane { min-height: 40px; }.lane .preview-card { height: 40px; }
+  .felt-board { top: 50px; width: calc(var(--lane-card-w) * 4 + 60px); }.lane-row { gap: 15px; }.lane { min-height: calc(var(--lane-card-w) * 1.38); padding: 1px; }.lane .card { height: calc(var(--lane-card-w) * 1.38); padding: 4px; }.lane .card-name { font-size: 10px; height: 21px; padding-right: 16px; }.lane .portrait { flex: 1; height: auto; min-height: 25px; }.lane .stats { font-size: 19px; }.lane .sigils { height: 12px; }.lane .sigil { width: 12px; height: 12px; }.lane .card-cost { top: 3px; right: 3px; font-size: 13px; }
+
+  .board-rail { font-size: 9px; margin-bottom: 3px; }.board-rail b { font-size: 9px; }
+  .field-divider { height: 8px; }.bottom-rail { display: none; }
+
+  .opponent-field { --intent-space: 46px; }.opponent-intents { gap: 15px; }.next-play { padding: 3px; gap: 2px; }.next-play-label { font-size: 9px; }.next-play-name { font-size: 10px; line-height: 1.1; }.next-play-stats { gap: 2px; font-size: 10px; }.next-play-stats > span { gap: 1px; }.next-play-stats .card-icon { width: 7px; height: 9px; }
   .scale-stage { top: 70px; left: 15px; width: 135px; }.balance { transform: scale(.57); height: 125px; margin-bottom: -45px; }.scale-copy strong { font-size: 12px; }.bone-reserve { left: 40px; top: 208px; gap: 7px; }.bone-bowl { width: 45px; height: 28px; border-width: 2px; }.bone-pile { transform: scale(.6); transform-origin: left top; left: 5px; top: 5px; }.bone-reserve strong { font-size: 23px; }.bone-reserve span { font-size: 10px; }
   .bell { right: 38px; top: 210px; width: 105px; height: 92px; transform: scale(.76); transform-origin: center top; }.tactic-controls { top: auto; bottom: 14px; left: 16px; flex-direction: row; gap: 6px; }.tactic-controls button { font-size: 10px; padding: 5px 7px; min-height: 29px; }
   .hand-table { width: 46vw; bottom: 7px; height: calc(var(--hand-card-w) * 1.44 + 23px); }.hand { --overlap: clamp(21px,calc((var(--hand-count) - 3) * 10px + 25px),70px); padding-bottom: 17px; }.hand-instruction { font-size: 10px; top: -14px; }.hand .card-name { font-size: 11px; height: 25px; }.hand .portrait { flex: 1; height: auto; min-height: 26px; }.hand .stats { font-size: 21px; }.hand .sigils { height: 16px; }.hand .card-cost { font-size: 15px; }.hand-card:hover:not(:disabled),.hand-card:focus-visible:not(:disabled) { transform: translateY(-15px) rotate(0); }.hand-card.selected { transform: translateY(-15px); }.hand-pages { font-size: 10px; gap: 10px; bottom: -5px; }.hand-pages button { height: 19px; width: 23px; font-size: 18px; }

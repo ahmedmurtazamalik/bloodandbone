@@ -24,5 +24,7 @@ test('rulebook explains the full-round sixteen-turn contest and special targetin
   assert.match(html, /Airborne.*flies over/is);
   assert.match(html, /one tactical action per turn.*Maneuver.*adjacent empty lane.*Mend.*2 Bones/is);
   assert.match(html, /creature deck.*reveal.*top three.*choose one.*other two.*bottom/is);
-  assert.match(html, /incoming.*authored lane.*blocked.*adjacent lane/is);
+  assert.match(html, /two combat rows.*opponent.*yours/is);
+  assert.match(html, /Next tabs.*opponent's lanes.*after your attack/is);
+  assert.match(html, /intended lane.*blocked.*adjacent lane/is);
 });

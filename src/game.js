@@ -34,6 +34,7 @@ let scene = 'title';
 let run = null;
 let battle = null;
 let preview = [];
+let previewResolved = false;
 let rewardKeys = [];
 let scoutOptions = [];
 let selectedId = null;
@@ -113,6 +114,7 @@ function startBattle() {
   const startingBones = startingBonesForRun(run);
   battle = createBattle({ hand, deck, sideDeck, bones: startingBones, hasDrawn: true, turn: 1 });
   preview = previewForTurn(run.encounter, 1);
+  previewResolved = false;
   ledger.clear(); renderedLogEntries = 0; ledger.beginTurn(1);
   ledger.add({ type: 'battle-start', encounterName: ENCOUNTERS[run.encounter].name, handNames: hand.map(card => card.name), deckNames: run.deck.map(key => CARD_LIBRARY[key]?.name || key) });
   ledger.add({ type: 'bones', reason: 'The Marrow Reserve', amount: marrowBones, total: marrowBones });
@@ -315,6 +317,7 @@ async function ringBell() {
   ledger.beginPhase('opponent');
   battle = opponentMaturation.state;
   opponentMaturation.events.forEach(event => ledger.add(event));
+  previewResolved = true;
   battle = deployment.state; render();
   deployment.events.forEach(event => ledger.add(event));
   const entering = preview.find(entry => !resolvedRound.blockedDeployments.includes(entry.lane));
@@ -335,6 +338,7 @@ async function ringBell() {
   battle = phase('turn-start').state;
   ledger.beginTurn(battle.turn);
   preview = previewForTurn(run.encounter, battle.turn, battle);
+  previewResolved = false;
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   ledger.add({ type: 'turn-ready', drawRequired: !battle.hasDrawn });
   busy = false; render();
@@ -454,13 +458,18 @@ function canMend(card) {
   return Boolean(card) && card.health < (card.maxHealth ?? card.health);
 }
 
-function laneHtml(card, lane, side, incoming = false) {
+function nextPlayHtml(card, lane) {
+  const description = `Opponent's next play in lane ${lane + 1}: ${cardDescription(card)} Arrives after your attack.`;
+  return `<button class="next-play preview" data-lane="${lane}" style="grid-column:${lane + 1}" aria-label="${escapeHtml(description)}" title="${escapeHtml(description)}"><span class="next-play-label">Next</span><span class="next-play-stats" aria-hidden="true"><span class="power">${icon('power')}<b>${card.power}</b></span><span class="health">${icon('health')}<b>${card.health}</b></span></span><strong class="next-play-name">${escapeHtml(card.name)}</strong></button>`;
+}
+
+function laneHtml(card, lane, side) {
   const selected = side === 'player' && (sacrificeLanes.includes(lane) || tacticSourceLane === lane);
   const tacticTarget = tacticMode === 'maneuver' ? (tacticSourceLane == null ? canManeuverFrom(lane) : !card && Math.abs(tacticSourceLane - lane) === 1)
     : tacticMode === 'mend' ? canMend(card) : false;
   const canTarget = side === 'player' && (tacticTarget || (selectedId && (selectionStage === 'sacrifice' ? Boolean(card) : (!card || selected))));
-  const label = `${side === 'preview' ? 'Incoming' : side === 'opponent' ? 'Opponent' : 'Your'} lane ${lane + 1}: ${card ? cardDescription(card) : 'Empty.'}${selected ? ' Selected.' : ''}${canTarget ? ' Available target.' : ''}`;
-  const contents = card ? cardHtml(card, incoming ? 'preview-card' : '') : '<span class="empty-slot" aria-hidden="true"></span>';
+  const label = `${side === 'opponent' ? 'Opponent' : 'Your'} lane ${lane + 1}: ${card ? cardDescription(card) : 'Empty.'}${selected ? ' Selected.' : ''}${canTarget ? ' Available target.' : ''}`;
+  const contents = card ? cardHtml(card) : '<span class="empty-slot" aria-hidden="true"></span>';
   const attributes = `class="lane ${side} ${selected ? 'sacrifice-selected' : ''} ${canTarget ? 'can-target' : ''}" data-lane="${lane}" data-number="${lane + 1}" aria-label="${escapeHtml(label)}"${card ? ` title="${escapeHtml(cardDescription(card))}"` : ''}`;
   return side === 'player'
     ? `<button ${attributes} aria-pressed="${selected}"${busy ? ' disabled' : ''}>${contents}</button>`
@@ -479,7 +488,7 @@ function renderScale(value) {
 function renderBattle() {
   const activeElement = document.activeElement;
   const focusedCardId = activeElement?.closest('.hand-card')?.dataset.id;
-  const focusedLaneControl = activeElement?.closest('.lane');
+  const focusedLaneControl = activeElement?.closest('.lane, .next-play');
   const focusedLane = focusedLaneControl?.dataset.lane;
   const focusedSide = ['player', 'opponent', 'preview'].find(side => focusedLaneControl?.classList.contains(side));
   const tutorialCard = tutorial.active && tutorial.current()?.action === 'select-card' ? battle.hand.find(card => card.key === tutorial.current().target) : null;
@@ -492,8 +501,10 @@ function renderBattle() {
   const encounter = ENCOUNTERS[run.encounter];
   ui.trialLabel.textContent = `TRIAL ${['I','II','III'][run.encounter]} OF III`;
   ui.opponentName.textContent = encounter.name; ui.opponentSubtitle.textContent = encounter.subtitle;
-  const previewByLane = Array(4).fill(null); preview.forEach(entry => { previewByLane[entry.lane] ||= entry.card; });
-  ui.previewRow.innerHTML = previewByLane.map((card, lane) => laneHtml(card, lane, 'preview', true)).join('');
+  const previewByLane = Array(4).fill(null);
+  if (!previewResolved) preview.forEach(entry => { previewByLane[entry.lane] ||= entry.card; });
+  ui.previewRow.innerHTML = previewByLane.map((card, lane) => card ? nextPlayHtml(card, lane) : '').join('');
+  ui.previewRow.hidden = !previewByLane.some(Boolean);
   ui.opponentRow.innerHTML = battle.opponentLanes.map((card, lane) => laneHtml(card, lane, 'opponent')).join('');
   ui.playerRow.innerHTML = battle.playerLanes.map((card, lane) => laneHtml(card, lane, 'player')).join('');
   ui.playerRow.querySelectorAll('.lane').forEach(button => button.addEventListener('click', () => laneClick(Number(button.dataset.lane))));
@@ -524,8 +535,7 @@ function renderBattle() {
   ui.bonePile.innerHTML = Array.from({ length: Math.min(10, battle.bones) }, (_, index) => `<i class="bone-token" style="--r:${-26 + (index * 17) % 55}deg;--x:${(index % 4) * 9}px;--y:${Math.floor(index / 4) * -7}px"></i>`).join('');
   ui.turnReadout.textContent = battle.turn <= MATCH_RULES.regulationTurns ? `Turn ${battle.turn} / ${MATCH_RULES.regulationTurns}` : `Sudden death · ${battle.turn}`;
   ui.phaseReadout.textContent = busy ? 'Combat resolving' : tacticMode === 'maneuver' ? 'Maneuver a creature' : tacticMode === 'mend' ? 'Mend a creature' : battle.hasDrawn ? 'Play cards or ring' : 'Choose one draw';
-  const incomingPower = previewByLane.reduce((sum, card) => sum + (card?.power || 0), 0);
-  ui.enemyPower.textContent = preview.length ? `${incomingPower} Power approaching` : 'No arrivals this turn';
+  ui.enemyPower.textContent = previewResolved ? 'In play' : preview.length ? 'Plays after your attack' : 'No queued plays';
   renderScale(battle.scale);
   ui.instruction.textContent = instructionText();
   const card = selectedCard();
@@ -538,7 +548,7 @@ function renderBattle() {
   if (focusedCardId) {
     focusHandCard(focusedCardId);
   } else if (focusedLane !== undefined) {
-    focusWithoutInspection(document.querySelector(`.lane.${focusedSide}[data-lane="${focusedLane}"]`));
+    focusWithoutInspection(document.querySelector(`.${focusedSide === 'preview' ? 'next-play' : 'lane'}.${focusedSide}[data-lane="${focusedLane}"]`));
   }
 }
 
@@ -633,11 +643,10 @@ function renderTutorial() {
 function cardForControl(control) {
   if (!control) return null;
   if (control.classList.contains('hand-card')) return battle?.hand.find(card => card.id === control.dataset.id);
+  if (control.classList.contains('next-play')) return preview.find(entry => entry.lane === Number(control.dataset.lane))?.card;
   if (control.classList.contains('lane')) {
     const lane = Number(control.dataset.lane);
-    return control.classList.contains('player') ? battle?.playerLanes[lane]
-      : control.classList.contains('opponent') ? battle?.opponentLanes[lane]
-      : preview.find(entry => entry.lane === lane)?.card;
+    return control.classList.contains('player') ? battle?.playerLanes[lane] : battle?.opponentLanes[lane];
   }
   if (control.dataset.id) return scoutOptions.find(card => card.id === control.dataset.id);
   const template = CARD_LIBRARY[control.dataset.key];
@@ -648,8 +657,9 @@ function cardForControl(control) {
 function inspectorFocusOrigin() {
   if (inspectorOrigin?.isConnected) return inspectorOrigin;
   if (inspectorOrigin?.classList.contains('hand-card')) return [...ui.hand.querySelectorAll('.hand-card')].find(card => card.dataset.id === inspectorOrigin.dataset.id);
+  if (inspectorOrigin?.classList.contains('next-play')) return ui.previewRow.querySelector(`[data-lane="${inspectorOrigin.dataset.lane}"]`);
   if (inspectorOrigin?.classList.contains('lane')) {
-    const side = ['player', 'opponent', 'preview'].find(value => inspectorOrigin.classList.contains(value));
+    const side = ['player', 'opponent'].find(value => inspectorOrigin.classList.contains(value));
     return document.querySelector(`.lane.${side}[data-lane="${inspectorOrigin.dataset.lane}"]`);
   }
   return null;
@@ -681,6 +691,7 @@ function showInspector(card, origin, pinned = false) {
   const cost = card.cost.type === 'free' ? 'Free' : `${card.cost.amount} ${card.cost.type === 'blood' ? 'Blood' : 'Bones'}`;
   const sigils = sigilsOf(card).filter(sigil => SIGILS[sigil]);
   ui.inspectorDetails.innerHTML = `<h2>${escapeHtml(card.name)}</h2><dl class="inspection-stats"><div><dt>Cost</dt><dd>${cost}</dd></div><div><dt>Power</dt><dd>${card.power}</dd></div><div><dt>Health</dt><dd>${card.health} / ${card.maxHealth ?? card.health}</dd></div></dl>${sigils.length ? `<ul class="inspection-sigils">${sigils.map(sigil => `<li>${icon(sigil)}<div><strong>${SIGILS[sigil][1]}</strong><p>${SIGILS[sigil][2]}</p></div></li>`).join('')}</ul>` : '<p class="inspection-plain">No sigils.</p>'}`;
+  if (origin?.classList.contains('next-play')) ui.inspectorDetails.insertAdjacentHTML('afterbegin', `<p class="inspection-context">Next play · lane ${Number(origin.dataset.lane) + 1}<br>Arrives after your attack.</p>`);
   ui.cardInspector.hidden = false;
   ui.cardInspector.dataset.pinned = String(pinned);
   if (pinned) focusWithoutInspection(ui.inspectorClose);
@@ -828,7 +839,7 @@ ui.handNext.addEventListener('click', () => changeHandPage(1));
 ui.inspectButton.addEventListener('click', () => showInspector(selectedCard(), ui.inspectButton, true));
 ui.inspectorClose.addEventListener('click', () => closeInspector(true));
 
-const inspectionControl = target => target?.closest('.hand-card, .lane, .deck-card');
+const inspectionControl = target => target?.closest('.hand-card, .lane, .next-play, .deck-card');
 for (const container of [ui.hand, ui.playerRow, ui.opponentRow, ui.previewRow, ui.deckChoices]) {
   container.addEventListener('pointerover', event => {
     if (event.pointerType === 'touch' || suppressPassiveHover) return;

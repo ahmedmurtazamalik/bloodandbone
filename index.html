@@ -40,11 +40,12 @@
         <div class="scale-copy"><strong id="scaleReadout">The balance is even</strong></div>
       </section>
 
-      <section class="felt-board" id="board" aria-label="Four combat lanes">
-        <div class="board-rail top-rail"><span>Incoming</span><b id="enemyPower">0 Power waiting</b></div>
-        <div id="previewRow" class="lane-row preview-row" aria-label="Incoming enemy cards"></div>
-        <div class="lane-divider"><span>Opponent</span></div>
-        <div id="opponentRow" class="lane-row opponent-row" aria-label="Opponent lanes"></div>
+      <section class="felt-board" id="board" aria-label="Two combat rows with four lanes each">
+        <div class="board-rail top-rail"><span>Opponent</span><b id="enemyPower">Plays after your attack</b></div>
+        <div class="opponent-field">
+          <div id="previewRow" class="opponent-intents" aria-label="Opponent's next plays"></div>
+          <div id="opponentRow" class="lane-row opponent-row" aria-label="Opponent lanes"></div>
+        </div>
         <div class="field-divider" aria-hidden="true"></div>
         <div id="playerRow" class="lane-row player-row" aria-label="Player lanes"></div>
         <div class="board-rail bottom-rail"><span>Your creatures</span></div>
@@ -101,7 +102,7 @@
         <article><b>Tactics</b><p>You may use one tactical action per turn. Maneuver moves one creature into an adjacent empty lane. Mend spends 2 Bones to restore up to 2 Health without exceeding maximum Health. Moving and mending share the same opportunity, so choose carefully.</p></article>
         <article><b>The contest</b><p>Your creatures attack first, but the opponent always replies before the round is judged. A trial cannot end before turn 12. From then on, a 20-point lead wins by domination. Otherwise, on turn 16 the leader wins regulation; a tie enters sudden death until one full round ends with a leader. If your Wolf deals 3 Power and their Stoat replies for 1 Power directly, you lead by 2.</p></article>
         <article><b>Special targeting</b><p>Bifurcated Strike attacks the two diagonal lanes and not the forward lane. Trifurcated Strike attacks left, forward, and right. Airborne flies over an ordinary blocker unless Mighty Leap catches it.</p></article>
-        <article><b>Read the turn</b><p>Incoming cards are shown one turn early in their authored lane. If that lane is blocked, the opponent visibly flanks into the stronger adjacent lane when one is open; otherwise deployment fails. Compare Power, Health, and sigils before choosing a draw, sacrifices, and blockers. The Turn Ledger records every calculation.</p></article>
+        <article><b>Read the turn</b><p>There are two combat rows: the opponent's creatures and yours. Small Next tabs are pinned to the opponent's lanes; they show creatures waiting to enter after your attack. These creatures are not on the board yet. If an intended lane is blocked, the opponent flanks into the stronger adjacent lane when one is open; otherwise deployment fails. Inspect a tab to check the creature's stats and sigils. The Battle record shows every calculation.</p></article>
       </div>
       <div id="sigilGlossary" class="sigil-glossary"></div>
       <button id="replayTutorial" class="wood-button secondary">Replay guided hand</button>
