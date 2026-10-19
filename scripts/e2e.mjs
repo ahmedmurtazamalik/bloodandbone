@@ -40,10 +40,10 @@ try {
   const openingAudio = await page.evaluate(() => window.__BLOOD_BONE__.snapshot().audio);
   assert.equal(openingAudio.contextState, 'running');
   assert.match(openingAudio.musicSrc, /artifacts\/hamlet\.mp3$/);
-  assert.equal(await page.locator('#ledgerPanel').isVisible(), true);
-  assert.match(await page.locator('#turnLog').innerText(), /Turn 1[\s\S]*Woodsman takes the opposite seat[\s\S]*Incoming this turn/i);
+  assert.equal(await page.locator('#ledgerDialog').isVisible(), false);
+  assert.match(await page.locator('#turnLog').textContent(), /Turn 1[\s\S]*Woodsman takes the opposite seat[\s\S]*Incoming this turn/i);
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 1);
-  assert.match(await page.locator('#turnLog').innerText(), /Marrow Reserve adds 1 Bone\. You have 1\./);
+  assert.match(await page.locator('#turnLog').textContent(), /Marrow Reserve adds 1 Bone\. You have 1\./);
   assert.equal(await page.locator('#tutorialOverlay').isVisible(), true);
   assert.ok(await page.locator('.preview-card').count() >= 1);
   await page.screenshot({ path: 'artifacts/tutorial.png', fullPage: true });
@@ -55,7 +55,7 @@ try {
   await page.locator('.hand-card[data-key="squirrel"]').click();
   await laneZero.click();
   assert.deepEqual(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().playerCards), ['squirrel']);
-  assert.match(await page.locator('#turnLog').innerText(), /You play Squirrel in lane 1\./);
+  assert.match(await page.locator('#turnLog').textContent(), /You play Squirrel in lane 1\./);
   await page.locator('.hand-card[data-key="stoat"]').click();
   await laneZero.click();
   await page.locator('#offerButton').click();
@@ -63,19 +63,19 @@ try {
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().tutorial === 'explain-bones');
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 2);
   assert.equal(await page.locator('#bonePile .bone-token').count(), 2);
-  const paymentLog = await page.locator('#turnLog').innerText();
+  const paymentLog = await page.locator('#turnLog').textContent();
   assert.match(paymentLog, /You offer Squirrel for 1 Blood and gain 1 Bone\./);
   assert.match(paymentLog, /You play Stoat in lane 1\./);
   await page.locator('#tutorialContinue').click();
   await page.locator('#bellButton').click();
   await page.waitForTimeout(150);
   assert.equal(await page.locator('#scaleReadout').innerText(), 'The balance is even');
-  assert.match(await page.locator('#turnLog').innerText(), /ring the bell/i);
-  await page.waitForFunction(() => document.querySelector('#turnLog')?.innerText.includes('Stoat attacks through open lane 1'));
+  assert.match(await page.locator('#turnLog').textContent(), /ring the bell/i);
+  await page.waitForFunction(() => document.querySelector('#turnLog')?.textContent.includes('Stoat attacks through open lane 1'));
   assert.equal(await page.locator('#scaleReadout').innerText(), 'You lead by 1');
   await page.screenshot({ path: 'artifacts/combat-playback.png', fullPage: true });
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().turn >= 2 && window.__BLOOD_BONE__.snapshot().tutorial === 'draw-squirrel');
-  const combatLog = await page.locator('#turnLog').innerText();
+  const combatLog = await page.locator('#turnLog').textContent();
   assert.match(combatLog, /You ring the bell\. Your creatures attack from left to right\./);
   assert.match(combatLog, /Stoat attacks through open lane 1 for 1 scale damage\./);
   assert.match(combatLog, /The opponent sends Stoat into lane 3\./);
@@ -90,7 +90,7 @@ try {
   await page.locator('#playerRow [data-lane="0"]').click();
   await page.locator('#playerRow [data-lane="1"]').click();
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().tacticUsed), true);
-  assert.match(await page.locator('#turnLog').innerText(), /maneuver Stoat from lane 1 to lane 2/i);
+  assert.match(await page.locator('#turnLog').textContent(), /maneuver Stoat from lane 1 to lane 2/i);
   assert.equal(await page.locator('#maneuverButton').isDisabled(), true);
   await page.waitForTimeout(2400);
   await page.locator('#bellButton').click();
@@ -103,14 +103,19 @@ try {
   await page.locator('#scoutChoices .reward-card').nth(1).click();
   assert.equal(await page.locator('#scoutDialog').isVisible(), false);
   assert.equal(await page.evaluate(() => window.__BLOOD_BONE__.snapshot().handCount), handBeforeScout + 1);
-  assert.match(await page.locator('#turnLog').innerText(), /You scout .* choose .* cycle the others to the bottom/i);
+  assert.match(await page.locator('#turnLog').textContent(), /You scout .* choose .* cycle the others to the bottom/i);
+  await page.locator('#menuButton').click();
+  await page.locator('#ledgerButton').click();
   await page.waitForFunction(() => {
     const element = document.querySelector('#turnLog');
     return element && element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
   });
   assert.equal(await page.locator('#turnLog').evaluate(element => element.scrollTop + element.clientHeight >= element.scrollHeight - 2), true);
 
+  await page.keyboard.press('Escape');
+
   // The full rules dialog explains numbers, lane targeting, special strikes, and scale math.
+  await page.locator('#menuButton').click();
   await page.locator('#rulesButton').click();
   assert.equal(await page.locator('#rulesDialog').isVisible(), true);
   const rulesText = await page.locator('#rulesDialog').innerText();
@@ -125,6 +130,7 @@ try {
   await page.locator('#rulesDialog .dialog-close').click();
 
   // Sound controls change and persist independent levels without interrupting the track.
+  await page.locator('#menuButton').click();
   await page.locator('#audioButton').click();
   assert.equal(await page.locator('#audioDialog').isVisible(), true);
   await page.locator('#musicVolume').fill('31');
@@ -140,12 +146,16 @@ try {
   await page.screenshot({ path: 'artifacts/audio-controls.png', fullPage: true });
   await page.locator('#audioDialog .dialog-close').click();
 
-  // The paper ledger can collapse without covering play.
+  // Battle history is available through the game menu.
+  await page.locator('#menuButton').click();
+  await page.locator('#ledgerButton').click();
   await page.screenshot({ path: 'artifacts/turn-ledger.png', fullPage: true });
   await page.locator('#ledgerToggle').click();
   assert.equal(await page.locator('#ledgerPanel').getAttribute('class'), 'turn-ledger collapsed');
   assert.equal(await page.locator('#ledgerToggle').getAttribute('aria-expanded'), 'false');
   await page.locator('#ledgerToggle').click();
+
+  await page.keyboard.press('Escape');
 
   // Every visible card is now an illustrated physical card.
   assert.equal(await page.locator('.card').count(), await page.locator('.card .portrait svg').count());
@@ -197,7 +207,7 @@ try {
   await catchup.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'battle');
   assert.equal(await catchup.evaluate(() => window.__BLOOD_BONE__.snapshot().encounter), 0);
   assert.equal(await catchup.evaluate(() => window.__BLOOD_BONE__.snapshot().bones), 3);
-  assert.match(await catchup.locator('#turnLog').innerText(), /Marrow Reserve adds 1 Bone[\s\S]*Broken Bones add 2 Bones\. You have 3/i);
+  assert.match(await catchup.locator('#turnLog').textContent(), /Marrow Reserve adds 1 Bone[\s\S]*Broken Bones add 2 Bones\. You have 3/i);
   await catchup.evaluate(() => window.__BLOOD_BONE__.loseBattle());
   await catchup.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'defeat');
   assert.match(await catchup.locator('#resultScreen').innerText(), /YOUR CANDLE GOES DARK[\s\S]*DEAL AGAIN/i);

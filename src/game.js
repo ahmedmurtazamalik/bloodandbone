@@ -11,7 +11,7 @@ import { MATCH_RULES } from './match-rules.js';
 import { advanceRound } from './round-coordinator.js';
 
 const ui = Object.fromEntries([
-  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board',
+  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','handPrevious','handNext','handPageReadout',
 ].map(id => [id, document.getElementById(id)]));
 
 const SIGILS = Object.freeze({
@@ -43,6 +43,11 @@ let tacticMode = null;
 let tacticSourceLane = null;
 let busy = false;
 let toastTimer = null;
+let renderedScene = null;
+let handPage = 0;
+const dialogReturnFocus = new Map();
+const compactHand = window.matchMedia('(max-width: 600px)');
+const handLimit = () => compactHand.matches ? 5 : 7;
 const tutorial = new TutorialController();
 const audio = new AudioDirector();
 const ledger = new TurnLedger({ maxTurns: 8 });
@@ -103,6 +108,7 @@ function startBattle() {
   if (run.losses) ledger.add({ type: 'bones', reason: 'Broken Bones', amount: 2, total: startingBones, pluralSource: true });
   ledger.add({ type: 'preview', cardNames: preview.map(entry => `${entry.card.name} in lane ${entry.lane + 1}`) });
   selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; scoutOptions = []; busy = false;
+  handPage = 0;
   if (ui.scoutDialog.open) ui.scoutDialog.close();
   scene = 'battle'; render();
 }
@@ -134,7 +140,9 @@ function draw(source) {
   const result = drawCard(battle, source);
   if (!result.ok) { showToast(result.reason === 'ALREADY_DREW' ? 'YOU HAVE ALREADY DRAWN THIS TURN' : 'THAT PILE IS EMPTY'); audio.playCue('invalid'); return; }
   battle = result.state; ledger.add({ type: 'draw', cardName: battle.hand.at(-1).name, source });
+  ensureHandCardVisible(battle.hand.at(-1).id);
   advanceTutorial('draw', source); audio.playCue('draw'); render();
+  if (!tutorial.active) focusHandCard(battle.hand.at(-1).id);
 }
 
 function chooseScout(cardId) {
@@ -142,15 +150,18 @@ function chooseScout(cardId) {
   if (!result.ok) { showToast('THAT CREATURE IS NO LONGER AVAILABLE'); audio.playCue('invalid'); return; }
   const chosen = result.state.hand.at(-1);
   battle = result.state;
+  ensureHandCardVisible(chosen.id);
   ledger.add({ type: 'scout', cardNames: scoutOptions.map(card => card.name), chosenName: chosen.name });
   advanceTutorial('draw', 'main');
   scoutOptions = [];
   ui.scoutDialog.close();
   audio.playCue('draw'); render();
+  if (!tutorial.active) focusHandCard(chosen.id);
 }
 
 function selectCard(cardId) {
-  if (busy || !battle.hasDrawn) { showToast('CHOOSE A DRAW PILE FIRST'); return; }
+  if (busy) return;
+  if (!battle.hasDrawn) { showToast('CHOOSE A DRAW PILE FIRST'); return; }
   const card = battle.hand.find(item => item.id === cardId); if (!card) return;
   if (!tutorialAllows('select-card', card.key)) return;
   if (selectedId === cardId) { clearSelection(); return; }
@@ -162,10 +173,39 @@ function selectCard(cardId) {
   }
   selectedId = cardId; sacrificeLanes = []; tacticMode = null; tacticSourceLane = null;
   selectionStage = card.cost.type === 'blood' && card.cost.amount > 0 ? 'sacrifice' : 'place';
+  ensureHandCardVisible(card.id);
   advanceTutorial('select-card', card.key); audio.playCue('select'); render();
 }
 
-function clearSelection() { selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; render(); }
+function focusWithoutInspection(target) {
+  if (!target) return;
+  target.focus({ preventScroll: true });
+}
+
+function ensureHandCardVisible(cardId) {
+  const index = battle?.hand.findIndex(card => card.id === cardId) ?? -1;
+  if (index >= 0) handPage = Math.floor(index / handLimit());
+}
+
+function focusHandCard(cardId) {
+  focusWithoutInspection([...ui.hand.querySelectorAll('.hand-card')].find(button => button.dataset.id === cardId));
+}
+
+function focusBattleAction() {
+  const target = ui.hand.querySelector('.hand-card:not(:disabled)') || [ui.mainDeck, ui.sideDeck, ui.bellButton].find(button => !button.disabled);
+  focusWithoutInspection(target);
+}
+
+function clearSelection() {
+  const returnFocus = ui.actionTray.contains(document.activeElement);
+  const previousCardId = selectedId;
+  const previousTactic = tacticMode;
+  selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null; render();
+  if (returnFocus) {
+    if (previousCardId) focusHandCard(previousCardId);
+    else if (previousTactic) focusWithoutInspection(previousTactic === 'maneuver' ? ui.maneuverButton : ui.mendButton);
+  }
+}
 
 function selectedCard() { return battle?.hand.find(card => card.id === selectedId) || null; }
 function offeredBlood() { return sacrificeLanes.reduce((sum, lane) => sum + bloodValue(battle.playerLanes[lane]), 0); }
@@ -232,8 +272,10 @@ function chooseTactic(mode) {
 function lockOffering() {
   const card = selectedCard(); if (!card || offeredBlood() < card.cost.amount) return;
   if (!tutorialAllows('lock-offer')) return;
+  const moveFocus = document.activeElement === ui.offerButton;
   advanceTutorial('lock-offer');
   selectionStage = 'place'; audio.playCue('ui'); render();
+  if (moveFocus) focusWithoutInspection(ui.playerRow.querySelector('.can-target'));
 }
 
 async function ringBell() {
@@ -389,18 +431,21 @@ function canManeuverFrom(lane) {
   return Boolean(battle.playerLanes[lane]) && [lane - 1, lane + 1].some(target => target >= 0 && target < 4 && !battle.playerLanes[target]);
 }
 
-
 function canMend(card) {
   return Boolean(card) && card.health < (card.maxHealth ?? card.health);
 }
-
 
 function laneHtml(card, lane, side, incoming = false) {
   const selected = side === 'player' && (sacrificeLanes.includes(lane) || tacticSourceLane === lane);
   const tacticTarget = tacticMode === 'maneuver' ? (tacticSourceLane == null ? canManeuverFrom(lane) : !card && Math.abs(tacticSourceLane - lane) === 1)
     : tacticMode === 'mend' ? canMend(card) : false;
   const canTarget = side === 'player' && (tacticTarget || (selectedId && (selectionStage === 'sacrifice' ? Boolean(card) : (!card || selected))));
-  return `<button class="lane ${side} ${selected ? 'sacrifice-selected' : ''} ${canTarget ? 'can-target' : ''}" data-lane="${lane}" aria-label="${side} lane ${lane + 1}">${card ? cardHtml(card, incoming ? 'preview-card' : '') : '<span class="empty-slot"></span>'}</button>`;
+  const label = `${side === 'preview' ? 'Incoming' : side === 'opponent' ? 'Opponent' : 'Your'} lane ${lane + 1}: ${card ? cardDescription(card) : 'Empty.'}${selected ? ' Selected.' : ''}${canTarget ? ' Available target.' : ''}`;
+  const contents = card ? cardHtml(card, incoming ? 'preview-card' : '') : '<span class="empty-slot" aria-hidden="true"></span>';
+  const attributes = `class="lane ${side} ${selected ? 'sacrifice-selected' : ''} ${canTarget ? 'can-target' : ''}" data-lane="${lane}" data-number="${lane + 1}" aria-label="${escapeHtml(label)}"${card ? ` title="${escapeHtml(cardDescription(card))}"` : ''}`;
+  return side === 'player'
+    ? `<button ${attributes} aria-pressed="${selected}"${busy ? ' disabled' : ''}>${contents}</button>`
+    : card ? `<button ${attributes} type="button">${contents}</button>` : `<div ${attributes} role="img">${contents}</div>`;
 }
 
 function renderScale(value) {
@@ -409,9 +454,22 @@ function renderScale(value) {
   ui.playerWeights.innerHTML = clamped > 0 ? '<i></i>'.repeat(Math.min(10, clamped)) : '';
   ui.enemyWeights.innerHTML = clamped < 0 ? '<i></i>'.repeat(Math.min(10, -clamped)) : '';
   ui.scaleReadout.textContent = value === 0 ? 'The balance is even' : `${value > 0 ? 'You lead' : 'They lead'} by ${Math.abs(value)}`;
+  ui.scaleReadout.dataset.leader = value > 0 ? 'player' : value < 0 ? 'opponent' : 'even';
 }
 
 function renderBattle() {
+  const activeElement = document.activeElement;
+  const focusedCardId = activeElement?.closest('.hand-card')?.dataset.id;
+  const focusedLaneControl = activeElement?.closest('.lane');
+  const focusedLane = focusedLaneControl?.dataset.lane;
+  const focusedSide = ['player', 'opponent', 'preview'].find(side => focusedLaneControl?.classList.contains(side));
+  const tutorialCard = tutorial.active && tutorial.current()?.action === 'select-card' ? battle.hand.find(card => card.key === tutorial.current().target) : null;
+  if (tutorialCard) ensureHandCardVisible(tutorialCard.id);
+  else if (selectedId) ensureHandCardVisible(selectedId);
+  const pageCount = Math.max(1, Math.ceil(battle.hand.length / handLimit()));
+  handPage = Math.max(0, Math.min(handPage, pageCount - 1));
+  const firstCard = handPage * handLimit();
+  const visibleHand = battle.hand.slice(firstCard, firstCard + handLimit());
   const encounter = ENCOUNTERS[run.encounter];
   ui.trialLabel.textContent = `TRIAL ${['I','II','III'][run.encounter]} OF III`;
   ui.opponentName.textContent = encounter.name; ui.opponentSubtitle.textContent = encounter.subtitle;
@@ -420,10 +478,19 @@ function renderBattle() {
   ui.opponentRow.innerHTML = battle.opponentLanes.map((card, lane) => laneHtml(card, lane, 'opponent')).join('');
   ui.playerRow.innerHTML = battle.playerLanes.map((card, lane) => laneHtml(card, lane, 'player')).join('');
   ui.playerRow.querySelectorAll('.lane').forEach(button => button.addEventListener('click', () => laneClick(Number(button.dataset.lane))));
-  ui.hand.innerHTML = battle.hand.map(card => `<button class="hand-card card ${selectedId === card.id ? 'selected' : ''} ${card.rarity === 'rare' ? 'rare' : ''}" data-id="${card.id}" data-key="${card.key}">${cardInnerHtml(card)}</button>`).join('');
+  ui.hand.innerHTML = visibleHand.map((card, index) => {
+    const position = visibleHand.length > 1 ? (index / (visibleHand.length - 1)) * 2 - 1 : 0;
+    return `<button class="hand-card card ${selectedId === card.id ? 'selected' : ''} ${card.rarity === 'rare' ? 'rare' : ''}" style="--fan-index:${index};--fan-angle:${position * (compactHand.matches ? 8 : 11)}deg;--fan-rise:${-(1 - Math.abs(position)) * (compactHand.matches ? 11 : 18)}px" data-id="${card.id}" data-key="${card.key}" aria-label="${escapeHtml(cardDescription(card))}" title="${escapeHtml(cardDescription(card))}" aria-pressed="${selectedId === card.id}"${busy || !battle.hasDrawn ? ' disabled' : ''}>${cardInnerHtml(card)}</button>`;
+  }).join('');
+  ui.hand.style.setProperty('--hand-count', visibleHand.length);
+  ui.hand.dataset.page = handPage; ui.hand.dataset.pages = pageCount;
+  ui.handPageReadout.textContent = battle.hand.length ? `${firstCard + 1}–${firstCard + visibleHand.length} / ${battle.hand.length}` : 'Empty hand';
+  ui.handPrevious.disabled = busy || tutorial.active || handPage === 0;
+  ui.handNext.disabled = busy || tutorial.active || handPage >= pageCount - 1;
+  ui.handPrevious.hidden = ui.handNext.hidden = ui.handPageReadout.hidden = pageCount <= 1;
   ui.hand.querySelectorAll('.hand-card').forEach(button => button.addEventListener('click', () => selectCard(button.dataset.id)));
   ui.mainCount.textContent = battle.deck.length; ui.sideCount.textContent = battle.sideDeck.length;
-  ui.mainDeck.title = battle.deck.length ? `Creature deck (${battle.deck.length} remaining): ${battle.deck.map(card => card.name).join(', ')}` : 'Creature deck empty';
+  ui.mainDeck.title = battle.deck.length ? `Scout up to 3 creatures and choose 1. ${battle.deck.length} cards remain.` : 'Creature deck empty';
   ui.mainDeck.disabled = busy || battle.hasDrawn || !battle.deck.length; ui.sideDeck.disabled = busy || battle.hasDrawn || !battle.sideDeck.length;
   ui.bellButton.disabled = busy || !battle.hasDrawn;
   ui.maneuverButton.disabled = busy || battle.tacticUsed || tutorial.active || !battle.playerLanes.some((card, lane) => canManeuverFrom(lane));
@@ -437,15 +504,30 @@ function renderBattle() {
   ui.bonesReadout.textContent = battle.bones;
   ui.bonePile.innerHTML = Array.from({ length: Math.min(10, battle.bones) }, (_, index) => `<i class="bone-token" style="--r:${-26 + (index * 17) % 55}deg;--x:${(index % 4) * 9}px;--y:${Math.floor(index / 4) * -7}px"></i>`).join('');
   ui.turnReadout.textContent = battle.turn <= MATCH_RULES.regulationTurns ? `Turn ${battle.turn} / ${MATCH_RULES.regulationTurns}` : `Sudden death · ${battle.turn}`;
-  ui.phaseReadout.textContent = battle.hasDrawn ? 'Play cards or ring' : 'Choose one draw';
-  const enemyPower = battle.opponentLanes.reduce((sum, card) => sum + (card?.power || 0), 0);
-  ui.enemyPower.textContent = enemyPower ? `${enemyPower} Power on the felt` : 'No attackers on the felt';
+  ui.phaseReadout.textContent = busy ? 'Combat resolving' : tacticMode === 'maneuver' ? 'Maneuver a creature' : tacticMode === 'mend' ? 'Mend a creature' : battle.hasDrawn ? 'Play cards or ring' : 'Choose one draw';
+  const incomingPower = previewByLane.reduce((sum, card) => sum + (card?.power || 0), 0);
+  ui.enemyPower.textContent = preview.length ? `${incomingPower} Power approaching` : 'No arrivals this turn';
   renderScale(battle.scale);
   ui.instruction.textContent = instructionText();
   const card = selectedCard();
-  ui.actionTray.hidden = !card; ui.offerButton.hidden = !(card && selectionStage === 'sacrifice' && offeredBlood() >= card.cost.amount);
-  ui.selectionSummary.textContent = card ? selectionText(card) : '';
+  ui.actionTray.hidden = !card && !tacticMode; ui.offerButton.hidden = !(card && selectionStage === 'sacrifice' && offeredBlood() >= card.cost.amount);
+  ui.selectionSummary.textContent = card ? selectionText(card) : tacticMode === 'maneuver' ? 'Maneuver · move to an adjacent empty lane' : tacticMode === 'mend' ? 'Mend · 2 Bones to restore up to 2 Health' : '';
+  ui.cancelButton.textContent = tacticMode ? 'Cancel tactic' : 'Put card back';
   ui.tableScreen.classList.toggle('busy', busy);
+  if (focusedCardId) {
+    focusHandCard(focusedCardId);
+  } else if (focusedLane !== undefined) {
+    focusWithoutInspection(document.querySelector(`.lane.${focusedSide}[data-lane="${focusedLane}"]`));
+  }
+}
+
+function changeHandPage(delta) {
+  if (busy || tutorial.active || scene !== 'battle') return;
+
+  selectedId = null; sacrificeLanes = []; selectionStage = null; tacticMode = null; tacticSourceLane = null;
+  handPage += delta;
+  render();
+  focusBattleAction();
 }
 
 function renderTutorial() {
@@ -461,6 +543,13 @@ function renderTutorial() {
   ui.tutorialCopy.textContent = step.copy;
   ui.tutorialContinue.hidden = step.action !== 'continue';
   requestAnimationFrame(() => document.querySelector(step.spotlight)?.classList.add('tutorial-focus'));
+}
+
+function openDialog(dialog, returnTarget) {
+
+  for (const open of document.querySelectorAll('dialog[open]')) if (open !== dialog) open.close();
+  dialogReturnFocus.set(dialog, returnTarget);
+  if (!dialog.open) dialog.showModal();
 }
 
 function renderAudioControls() {
@@ -495,6 +584,9 @@ function renderTurnLog() {
 
 function instructionText() {
   const card = selectedCard();
+  if (busy) return 'Your creatures attack first. The opponent replies next.';
+  if (tacticMode === 'maneuver') return tacticSourceLane == null ? 'Choose a highlighted creature to move.' : 'Choose an adjacent highlighted empty lane.';
+  if (tacticMode === 'mend') return 'Choose a highlighted wounded creature to heal.';
   if (!battle.hasDrawn) return 'Choose a pile to draw.';
   if (!card) return 'Select a card, or ring the bell.';
   if (selectionStage === 'sacrifice') return `Mark creatures worth ${card.cost.amount} blood.`;
@@ -508,13 +600,13 @@ function selectionText(card) {
 function renderRewards() {
   ui.rewardChoices.innerHTML = rewardKeys.map(key => {
     const card = createCard(key);
-    return `<button class="reward-card" data-key="${key}" aria-label="Choose ${card.name}">${cardHtml(card)}</button>`;
+    return `<button class="reward-card" data-key="${key}" aria-label="Choose ${escapeHtml(cardDescription(card))}">${cardHtml(card)}</button>`;
   }).join('');
   ui.rewardChoices.querySelectorAll('button').forEach(button => button.addEventListener('click', () => takeReward(button.dataset.key)));
 }
 
 function renderScoutChoices() {
-  ui.scoutChoices.innerHTML = scoutOptions.map(card => `<button class="reward-card" data-id="${card.id}" aria-label="Draw ${card.name}">${cardHtml(card)}</button>`).join('');
+  ui.scoutChoices.innerHTML = scoutOptions.map(card => `<button class="reward-card" data-id="${card.id}" aria-label="Draw ${escapeHtml(cardDescription(card))}">${cardHtml(card)}</button>`).join('');
   ui.scoutChoices.querySelectorAll('button').forEach(button => button.addEventListener('click', () => chooseScout(button.dataset.id)));
 }
 
@@ -528,10 +620,21 @@ function renderResult() {
 }
 
 function render() {
+  const sceneChanged = renderedScene !== scene;
+  if (sceneChanged) for (const dialog of document.querySelectorAll('dialog[open]')) dialog.close();
   ui.titleScreen.hidden = scene !== 'title'; ui.tableScreen.hidden = scene !== 'battle'; ui.rewardScreen.hidden = scene !== 'reward';
   ui.resultScreen.hidden = !['victory', 'retry', 'defeat'].includes(scene);
   if (scene === 'battle') { renderBattle(); renderTurnLog(); } if (scene === 'reward') renderRewards(); if (['victory', 'retry', 'defeat'].includes(scene)) renderResult();
   renderTutorial(); renderAudioControls();
+  ui.ledgerButton.disabled = !ledger.snapshot().length;
+  if (sceneChanged) {
+    const focusTarget = scene === 'reward' ? ui.rewardChoices.querySelector('button')
+      : ['victory', 'retry', 'defeat'].includes(scene) ? ui.restartButton
+      : scene === 'battle' ? tutorial.active ? ui.tutorialContinue : ui.hand.querySelector('button')
+      : ui.startButton;
+    focusWithoutInspection(focusTarget);
+  }
+  renderedScene = scene;
 }
 
 ui.startButton.addEventListener('click', () => startRun(tutorial.shouldAutoStart()));
@@ -541,8 +644,23 @@ ui.mainDeck.addEventListener('click', () => draw('main')); ui.sideDeck.addEventL
 ui.maneuverButton.addEventListener('click', () => chooseTactic('maneuver')); ui.mendButton.addEventListener('click', () => chooseTactic('mend'));
 ui.scoutDialog.addEventListener('cancel', event => event.preventDefault());
 ui.bellButton.addEventListener('click', ringBell); ui.offerButton.addEventListener('click', lockOffering); ui.cancelButton.addEventListener('click', clearSelection);
-ui.rulesButton.addEventListener('click', () => { audio.playCue('ui'); ui.rulesDialog.showModal(); });
-ui.audioButton.addEventListener('click', () => { audio.playCue('ui'); renderAudioControls(); ui.audioDialog.showModal(); });
+ui.menuButton.addEventListener('click', () => { audio.playCue('ui'); openDialog(ui.pauseDialog, ui.menuButton); });
+ui.resumeButton.addEventListener('click', () => ui.pauseDialog.close());
+for (const button of [ui.rulesButton, ui.titleRulesButton]) button.addEventListener('click', () => { audio.playCue('ui'); openDialog(ui.rulesDialog, button === ui.titleRulesButton ? button : ui.menuButton); });
+for (const button of [ui.audioButton, ui.titleAudioButton]) button.addEventListener('click', () => { audio.playCue('ui'); renderAudioControls(); openDialog(ui.audioDialog, button === ui.titleAudioButton ? button : ui.menuButton); });
+ui.ledgerButton.addEventListener('click', () => {
+  audio.playCue('ui'); openDialog(ui.ledgerDialog, ui.ledgerButton); renderTurnLog();
+  requestAnimationFrame(() => { ui.turnLog.scrollTop = ui.turnLog.scrollHeight; });
+});
+for (const dialog of [ui.pauseDialog, ui.rulesDialog, ui.audioDialog, ui.ledgerDialog]) dialog.addEventListener('close', () => {
+  if (document.querySelector('dialog[open]')) return;
+
+  const returnTarget = dialogReturnFocus.get(dialog);
+  if (returnTarget?.closest('dialog')?.open === false) focusWithoutInspection(ui.menuButton);
+  else if (returnTarget?.getClientRects().length) focusWithoutInspection(returnTarget);
+});
+ui.handPrevious.addEventListener('click', () => changeHandPage(-1));
+ui.handNext.addEventListener('click', () => changeHandPage(1));
 ui.muteButton.addEventListener('click', () => { audio.toggleMute(); renderAudioControls(); });
 ui.musicVolume.addEventListener('input', event => { audio.setMusicVolume(Number(event.target.value) / 100); renderAudioControls(); });
 ui.sfxVolume.addEventListener('input', event => { audio.setSfxVolume(Number(event.target.value) / 100); audio.playCue('ui'); renderAudioControls(); });
@@ -555,11 +673,30 @@ ui.replayTutorial.addEventListener('click', () => { ui.rulesDialog.close(); tuto
 ui.tutorialContinue.addEventListener('click', () => {
   if (!tutorialAllows('continue')) return;
   const finalStep = tutorial.current()?.id === 'complete';
-  advanceTutorial('continue'); render();
+  advanceTutorial('continue');
+  render();
   if (finalStep) showToast('GUIDED HAND COMPLETE · THE TABLE IS YOURS');
 });
 ui.tutorialSkip.addEventListener('click', () => { tutorial.skip(); render(); showToast('TUTORIAL SKIPPED · REPLAY IT FROM THE RULEBOOK'); });
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || event.defaultPrevented) return;
+  const dialog = document.querySelector('dialog[open]');
+  if (dialog) { if (dialog !== ui.scoutDialog) { event.preventDefault(); dialog.close(); } return; }
+  if (scene !== 'battle' || busy || tutorial.active) return;
+  if (selectedId || tacticMode) { event.preventDefault(); clearSelection(); }
+});
 ui.sigilGlossary.innerHTML = Object.values(SIGILS).map(([, name, description]) => `<p><b>${name}</b><br>${description}</p>`).join('');
+let handResizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(handResizeTimer);
+  handResizeTimer = setTimeout(() => {
+    if (scene !== 'battle') return;
+
+    const focusedCardId = document.activeElement?.closest('.hand-card')?.dataset.id;
+    if (focusedCardId) ensureHandCardVisible(focusedCardId);
+    render();
+  }, 120);
+});
 
 if (new URLSearchParams(location.search).has('debug')) {
   window.__BLOOD_BONE__ = {

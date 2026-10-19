@@ -11,107 +11,63 @@
   <div class="hearth-light" aria-hidden="true"></div>
   <div class="paper-grain" aria-hidden="true"></div>
   <main id="gameShell">
-    <section id="titleScreen" class="overlay title-screen">
+    <section id="titleScreen" class="overlay title-screen" aria-labelledby="gameTitle">
+      <div class="menu-shadow" aria-hidden="true"></div>
       <div class="title-plaque">
-        <svg class="title-creature" viewBox="0 0 220 110" aria-hidden="true">
-          <path d="M110 91C77 86 55 62 57 37c2-23 24-29 38-14l15 18 15-18c14-15 36-9 38 14 2 25-20 49-53 54Z"/>
-          <path d="M75 36 47 10l12 30-29-7 26 17-27 12 34 1m82-27 28-26-12 30 29-7-26 17 27 12-34 1" fill="none" stroke-width="7"/>
-          <circle cx="91" cy="55" r="4"/><circle cx="129" cy="55" r="4"/><path d="m99 70 11 8 11-8" fill="none" stroke-width="5"/>
-        </svg>
-        <p class="kicker">A game of offerings and open lanes</p>
-        <h1><span>Blood</span><i>&</i><span>Bone</span></h1>
-        <p class="title-copy">Seat your creatures on the felt. Build an engine of Blood and Bones through a sixteen-turn contest, and dominate the brass scale.</p>
-        <button id="startButton" class="wood-button primary"><span>Take your seat</span><small>First visit includes a guided hand</small></button>
-        <button id="tutorialButton" class="quiet-button">Learn the table</button>
+        <svg class="title-engraving" viewBox="0 0 240 104" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="square"><path d="M36 91 44 68 28 48 50 53 41 28 66 52 80 25 95 58 118 78 145 54 163 24 170 51 195 26 184 54 213 47 195 70 203 91" stroke-width="5"/><path d="m74 84 25-17 18 16 19-16 24 17M102 87l16 11 18-11M8 97h73m80 0h72M68 60l20 13m77-12-21 13" stroke-width="2"/><path d="m96 74 8 5m32-5-8 5" stroke-width="5"/></g></svg>
+        <h1 id="gameTitle">BLOOD <i>&</i> BONE</h1>
+        <div class="title-menu">
+          <button id="startButton" class="wood-button primary">New run</button>
+          <button id="tutorialButton" class="wood-button">Guided hand</button>
+          <div class="title-options"><button id="titleRulesButton" class="quiet-button">Rules</button><button id="titleAudioButton" class="quiet-button">Sound</button></div>
+        </div>
       </div>
-      <div class="title-props" aria-hidden="true"><i class="candle one"></i><i class="candle two"></i><span class="loose-card"></span><span class="loose-bone"></span></div>
     </section>
 
-    <section id="tableScreen" class="table-screen" hidden>
-      <header class="opponent-header">
-        <div class="opponent-presence" aria-hidden="true">
-          <span class="shoulder left"></span><span class="hood"></span><span class="face"></span><span class="shoulder right"></span>
-        </div>
-        <div class="opponent-copy">
-          <p id="trialLabel" class="kicker">Trial I of III</p>
-          <h2 id="opponentName">The Woodsman</h2>
-          <p id="opponentSubtitle">Teaches Blood and open lanes</p>
-        </div>
-        <div class="header-tools">
-          <button id="audioButton" class="book-button audio-button" aria-label="Open sound controls"><span id="audioIcon">♪</span><b>Sound</b></button>
-          <button id="rulesButton" class="book-button" aria-label="Open rules and sigils"><span>?</span><b>Rules</b></button>
-        </div>
+    <section id="tableScreen" class="table-screen" hidden aria-label="Card table">
+      <div class="table-surface" aria-hidden="true"></div>
+      <header class="table-hud">
+        <div class="turn-plaque"><span id="turnReadout">Turn 1</span><strong id="phaseReadout">Play a card</strong></div>
+        <div class="opponent-copy"><p id="trialLabel">Trial I of III</p><h2 id="opponentName">The Woodsman</h2><p id="opponentSubtitle" class="visually-hidden">Teaches Blood and open lanes</p></div>
+        <button id="menuButton" class="menu-button" aria-haspopup="dialog">Menu</button>
       </header>
+      <div class="opponent-presence" aria-hidden="true">
+        <svg viewBox="0 0 250 136"><path d="M20 136 53 89 80 78 83 34 109 7 139 5 167 31 169 79 201 94 232 136" fill="#090a07"/><path d="m88 35 24-17 26 1 23 17-6 44-29 33-27-29z" fill="#29271b"/><g fill="none" stroke="#6d6443" stroke-width="2"><path d="m96 36 16-10 20 1 18 11-9 21 3 20-19 25-20-25 4-20zM126 29l-5 39 12 9-12 7m-26-29 20 7m39-8-20 8"/><path d="m92 17-23-14m19 28-30-9m100-3 27-15m-22 30 30-12"/></g><path d="m99 52 17 2-5 6-10-2m36-4 16-2-2 6-11 2" fill="#beab65"/></svg>
+      </div>
 
       <section class="scale-stage" aria-label="Damage balance">
-        <div class="balance" aria-hidden="true">
-          <div class="scale-pillar"><i></i></div>
-          <div id="scaleBeam" class="scale-beam">
-            <span class="beam-knob"></span>
-            <div class="scale-pan enemy-pan"><i></i><b id="enemyWeights"></b></div>
-            <div class="scale-pan player-pan"><i></i><b id="playerWeights"></b></div>
-          </div>
-          <div class="scale-base"></div>
-        </div>
-        <div class="scale-copy"><span>Opponent</span><strong id="scaleReadout">The balance is even</strong><span>You</span></div>
+        <div class="balance" aria-hidden="true"><div class="scale-pillar"><i></i></div><div id="scaleBeam" class="scale-beam"><span class="beam-knob"></span><div class="scale-pan enemy-pan"><i></i><b id="enemyWeights"></b></div><div class="scale-pan player-pan"><i></i><b id="playerWeights"></b></div></div><div class="scale-base"></div></div>
+        <div class="scale-copy"><strong id="scaleReadout">The balance is even</strong></div>
       </section>
 
-      <section class="felt-board" id="board">
-        <p class="mobile-board-hint">Swipe the felt to inspect all four lanes →</p>
-        <div class="board-rail top-rail"><span>Incoming next turn</span><b id="enemyPower">0 Power waiting</b></div>
+      <section class="felt-board" id="board" aria-label="Four combat lanes">
+        <div class="board-rail top-rail"><span>Incoming</span><b id="enemyPower">0 Power waiting</b></div>
         <div id="previewRow" class="lane-row preview-row" aria-label="Incoming enemy cards"></div>
-        <div class="lane-divider"><span>They descend here</span></div>
+        <div class="lane-divider"><span>Opponent</span></div>
         <div id="opponentRow" class="lane-row opponent-row" aria-label="Opponent lanes"></div>
-
-        <div class="table-controls">
-          <div id="boneReserve" class="bone-reserve" aria-label="Bone reserve">
-            <div id="bonePile" class="bone-pile" aria-hidden="true"></div>
-            <p><strong id="bonesReadout">0</strong><span>Bones</span></p>
-          </div>
-          <div class="tactic-controls" aria-label="Once-per-turn tactics">
-            <span>Tactic · once per turn</span>
-            <div><button id="maneuverButton" type="button">Maneuver</button><button id="mendButton" type="button">Mend · 2 Bones</button></div>
-          </div>
-          <button id="bellButton" class="bell" disabled aria-label="Ring bell and resolve combat">
-            <span class="bell-plunger"></span><span class="bell-dome"></span><span class="bell-base"></span>
-            <b>Ring the bell</b>
-          </button>
-          <div class="turn-plaque"><span id="turnReadout">Turn 1</span><strong id="phaseReadout">Play a card</strong></div>
-        </div>
-
+        <div class="field-divider" aria-hidden="true"></div>
         <div id="playerRow" class="lane-row player-row" aria-label="Player lanes"></div>
-        <div class="board-rail bottom-rail"><span>Your side of the table</span><b>Four lanes · first strike is yours</b></div>
+        <div class="board-rail bottom-rail"><span>Your creatures</span></div>
       </section>
 
-      <section class="hand-table">
-        <div class="piles">
-          <button id="mainDeck" class="deck-pile" aria-label="Draw from creature deck">
-            <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="mainCount">0</b><em>Creature deck</em><small>Scout 3 · choose 1</small>
-          </button>
-          <button id="sideDeck" class="deck-pile side" aria-label="Draw a squirrel">
-            <span class="deck-stack"><i class="card-back"><u></u></i></span><b id="sideCount">0</b><em>Squirrel deck</em><small>Draw an offering</small>
-          </button>
-        </div>
-        <div class="hand-wrap">
-          <div class="hand-heading"><span>Your hand</span><p id="instruction">Select a card or ring the bell.</p></div>
-          <div id="hand" class="hand" aria-label="Your hand"></div>
-        </div>
-        <aside id="ledgerPanel" class="turn-ledger" aria-label="Turn-by-turn battle log">
-          <header><div><span>Battle record</span><strong>Turn ledger</strong></div><button id="ledgerToggle" aria-expanded="true">Collapse</button></header>
-          <div id="turnLog" class="turn-log" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div>
-        </aside>
+      <div id="boneReserve" class="bone-reserve" aria-label="Bone reserve"><div class="bone-bowl" aria-hidden="true"><div id="bonePile" class="bone-pile"></div></div><p><strong id="bonesReadout">0</strong><span>Bones</span></p></div>
+      <div class="tactic-controls" aria-label="Once-per-turn tactics"><button id="maneuverButton" type="button">Maneuver</button><button id="mendButton" type="button">Mend · 2 Bones</button></div>
+      <button id="bellButton" class="bell" disabled aria-label="Ring bell and resolve combat"><span class="bell-plunger"></span><span class="bell-dome"></span><span class="bell-base"></span><b>Ring the bell</b></button>
+
+      <section class="hand-table" aria-label="Hand and draw piles">
+        <div class="piles"><button id="mainDeck" class="deck-pile" aria-label="Draw from creature deck"><span class="deck-stack"><i class="card-back"><u></u></i></span><b id="mainCount">0</b><em>Creatures</em><small>Scout 3 · take 1</small></button><button id="sideDeck" class="deck-pile side" aria-label="Draw a squirrel"><span class="deck-stack"><i class="card-back"><u></u></i></span><b id="sideCount">0</b><em>Squirrels</em><small>Draw an offering</small></button></div>
+        <div class="hand-wrap"><p id="instruction" class="hand-instruction" aria-live="polite">Select a card or ring the bell.</p><div id="hand" class="hand" aria-label="Your hand"></div><div class="hand-pages"><button id="handPrevious" aria-label="Previous hand cards">‹</button><span id="handPageReadout"></span><button id="handNext" aria-label="Next hand cards">›</button></div></div>
       </section>
 
-      <section id="actionTray" class="action-tray" hidden>
-        <p id="selectionSummary"></p>
-        <button id="offerButton" class="wax-button" hidden>Confirm the offering</button>
-        <button id="cancelButton" class="quiet-button">Put card back</button>
-      </section>
+      <section id="actionTray" class="action-tray" hidden><p id="selectionSummary"></p><div><button id="offerButton" class="wax-button" hidden>Confirm offering</button><button id="cancelButton" class="quiet-button">Cancel</button></div></section>
     </section>
+
+    <dialog id="pauseDialog" class="pause-dialog" aria-labelledby="pauseTitle"><h2 id="pauseTitle">At the table</h2><div class="pause-actions"><button id="resumeButton" class="wood-button primary">Resume</button><button id="ledgerButton" class="wood-button">Battle record</button><button id="rulesButton" class="wood-button" aria-label="Open rules and sigils">Rules & sigils</button><button id="audioButton" class="wood-button" aria-label="Open sound controls"><span id="audioIcon" aria-hidden="true">♪</span> Sound</button></div></dialog>
+    <dialog id="ledgerDialog" class="ledger-dialog" aria-label="Battle record"><form method="dialog"><button class="dialog-close" aria-label="Close battle record">×</button></form><aside id="ledgerPanel" class="turn-ledger" aria-label="Turn-by-turn battle log"><header><strong>Battle record</strong><button id="ledgerToggle" aria-expanded="true" aria-controls="turnLog">Collapse</button></header><div id="turnLog" class="turn-log" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></div></aside></dialog>
 
     <section id="rewardScreen" class="overlay reward-screen" hidden>
       <div class="reward-cloth">
-        <p class="kicker">The table relents</p><h2>Choose one creature</h2>
+        <h2>Choose a creature</h2>
         <p>Its card joins your deck for every remaining trial.</p>
         <div id="rewardChoices" class="reward-choices"></div>
       </div>
@@ -126,14 +82,14 @@
     </section>
 
     <dialog id="scoutDialog" class="scout-dialog" aria-labelledby="scoutTitle">
-      <p class="kicker">Read the tracks</p><h2 id="scoutTitle">Choose your quarry</h2>
+      <h2 id="scoutTitle">Scout the deck</h2>
       <p>Take one creature. The other revealed cards move to the bottom of your deck.</p>
       <div id="scoutChoices" class="reward-choices scout-choices"></div>
     </dialog>
 
-    <dialog id="rulesDialog">
+    <dialog id="rulesDialog" aria-labelledby="rulesTitle">
       <form method="dialog"><button class="dialog-close" aria-label="Close rules">×</button></form>
-      <p class="kicker">The little rulebook</p><h2>Blood, Bones & Sigils</h2>
+      <h2 id="rulesTitle">Blood, Bones & Sigils</h2>
       <div class="rules-grid">
         <article><b>Card numbers</b><p><strong>Power is the damage</strong> dealt when a creature attacks. <strong>Health is how much damage</strong> it can take before dying. Damage remains between turns; the red heart shows current Health.</p></article>
         <article><b>Draw</b><p>Your opening hand is dealt. On each later turn, choose the dependable Squirrel deck or Scout the creature deck: reveal the top three creatures, choose one, and place the other two on the bottom.</p></article>
@@ -149,9 +105,9 @@
       <button id="replayTutorial" class="wood-button secondary">Replay guided hand</button>
     </dialog>
 
-    <dialog id="audioDialog" class="audio-dialog">
+    <dialog id="audioDialog" class="audio-dialog" aria-labelledby="audioTitle">
       <form method="dialog"><button class="dialog-close" aria-label="Close sound controls">×</button></form>
-      <p class="kicker">Sound at the table</p><h2>Audio</h2>
+      <h2 id="audioTitle">Audio</h2>
       <button id="muteButton" class="wood-button secondary">Mute all audio</button>
       <label class="volume-control"><span>Music</span><output id="musicValue">42%</output><input id="musicVolume" type="range" min="0" max="100" step="1" value="42"></label>
       <label class="volume-control"><span>Effects & creatures</span><output id="sfxValue">72%</output><input id="sfxVolume" type="range" min="0" max="100" step="1" value="72"></label>
