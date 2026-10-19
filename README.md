@@ -7,7 +7,7 @@ This project contains **only the card-game loop**. It does not reproduce the cab
 ## Run locally
 
 ```bash
-cd "/home/murtaza/Murtaza/Game/Blood and Bone"
+cd "/home/murtaza/Murtaza/Week 1 Games/Blood and Bone"
 npm install
 npm run serve
 ```
@@ -28,7 +28,7 @@ The first run opens with an eleven-step guided hand that uses the real battle st
 
 ## Turn ledger
 
-The paper **Turn ledger** beside the hand explains the battle in chronological, player-readable prose. Each numbered turn is divided into **Your phase** and **Opponent phase**. It records:
+Open **Menu → Battle record** for the chronological **Turn ledger**. Each numbered turn is divided into **Your phase** and **Opponent phase**. It records:
 
 - Opening hand, incoming previews, Squirrel draws, and Scout choices
 - Played cards and destination lanes
@@ -41,7 +41,7 @@ The paper **Turn ledger** beside the hand explains the battle in chronological, 
 
 Combat playback is deliberately staged instead of applying the final board immediately. Each attacker winds up, impact updates the struck card's Health, deaths receive their own readable hold, and direct hits move the scale one event at a time before the board settles. Reduced-motion preferences shorten the physical motion and pauses without removing chronological event order.
 
-The ledger retains the latest eight turns, scrolls to each new event as it occurs, and can be collapsed. On tablet and mobile it moves below the hand rather than covering the felt or tutorial. Its DOM uses a live `role="log"` region, and the same structured entries are available through the query-gated debug snapshot for E2E verification.
+The ledger retains the latest eight turns and scrolls to new events. It opens as an optional book overlay, leaving the normal game scene clear. Its DOM uses a live `role="log"` region, and the same structured entries are available through the query-gated debug snapshot for E2E verification.
 
 ## How to play
 
@@ -63,7 +63,7 @@ The first turn uses the opening hand directly. On every later turn, choose exact
 ### Playing cards
 
 1. Select a card in your hand.
-2. For a Blood card, select enough friendly creatures and press **Offer Blood**.
+2. For a Blood card, select enough friendly creatures and press **Confirm offering**.
 3. Select a highlighted destination lane. A sacrificed creature's lane may be reused.
 4. For a Bone card, have enough Bones and select an empty lane.
 5. You may play multiple cards before ringing the bell.
@@ -85,7 +85,7 @@ Press **Ring the Bell** to end your action phase.
 7. Trials cannot end before turn 12. From turn 12 onward, lead by 20 to win by domination.
 8. If nobody dominates, the turn-16 leader wins regulation; ties continue into sudden death.
 
-Enemy cards in **Next Turn** are public information. Plan sacrifices and blockers around them.
+Enemy cards in **Incoming** are public information. Plan sacrifices and blockers around them.
 
 Each player turn also offers one shared **Tactical Action**: **Maneuver** a creature into an adjacent empty lane, or spend **2 Bones** to **Mend** up to 2 Health. This creates a recurring choice between answering telegraphed lanes, preserving an engine creature, and saving Bones for cards.
 
@@ -114,27 +114,33 @@ Open **Rules & Sigils** in the game for a quick reference.
 
 ## Presentation
 
-The visual redesign follows an original **Ritualist's Oak & Linocut Hearth** direction:
+The game uses one viewport-sized card table, informed by a study of actual deckbuilding game screens:
 
 - 32 unique local two-tone SVG creature illustrations
-- Unbleached rag-paper card stock and printed/debossed frames
-- Wax Blood seals, carved Bone costs, stamped sigils, and distinct Power/Health plates
-- Worn green felt mounted in dark oak
+- Original local table texture and an engraved opponent, consistent with the creature woodcuts
+- Ivory cards with Blood/Bone symbols, distinct sigils, and prominent Power/Health numbers
+- Four aligned positions for incoming, opponent, and player cards
+- A foreground fan hand, with seven visible cards on desktop or five on narrow phones and page controls for larger hands
+- Hover/focus card inspection and explicit touch inspection, including full sigil descriptions
+- Written sigil names and effects beside Scout and reward choices
+- A compact game menu for the deck, battle record, rules, audio, and fullscreen controls
 - Articulated brass balance with animated pans and damage weights
 - Live physical Bone pile, stacked decks, brass service bell, and shadowed opponent presence
-- Responsive four-lane board with an explicit mobile swipe cue
-- Reduced-motion support
+- All four lanes visible on mobile without a scrolling document
+- Descriptive screen-reader labels, keyboard focus retention, contextual tactic guidance, and Escape cancellation
+- Tutorial notes reposition around the real action and offering controls
+- Reduced-motion support, portrait-phone layouts, and compact landscape play
 
-The design consultation and before/after rationale are recorded in `GEMINI_DESIGN_REVIEW.md`.
+The official game references, critique of the rejected web-like interface, and new design constraints are documented in `RESEARCH_UI.md`. The game does not use the rejected generated forest backdrop. Earlier design consultation remains in `GEMINI_DESIGN_REVIEW.md`.
 
 ## Audio
 
 The soundtrack is **The Hamlet** from *Darkest Dungeon*, composed by Stuart Chatwood, supplied locally by the user at `artifacts/hamlet.mp3`.
 
-- Music begins only after the player presses **Take your seat**, satisfying browser autoplay policy.
+- Music begins after **New run** or **Guided hand**, satisfying browser autoplay policy.
 - The track loops continuously and remains active across battles and reward screens.
 - Victory and defeat lower the music smoothly without stopping it.
-- The Sound book beside Rules provides independent Music and Effects & Creatures sliders plus a global mute toggle.
+- **Menu → Sound** provides independent Music and Effects & Creatures sliders plus a global mute toggle.
 - Audio preferences persist locally under `bb_audio_settings`.
 
 Original synthesized effects cover card draw, selection, placement, sacrifice, Bone gain/spending, bell, creature hits, direct damage, balance movement, rewards, defeat, victory, and invalid actions. Every one of the 32 card templates also has a deliberate short creature voice profile, including chirps, croaks, growls, hisses, hoofbeats, insect clicks, buzzes, and supernatural drones.
@@ -180,13 +186,14 @@ node --check src/audio.js
 node --check scripts/e2e.mjs
 ```
 
-The deterministic simulation plays all three encounter scripts through real draws, sacrifices, Bone spending, lane placement, and combat. The E2E script waits for a healthy local server, fetches the supplied MP3, verifies post-gesture playback and exact `currentSrc`, performs the entire first-run tutorial through real clicks, checks semantic SFX activity, verifies volume/mute persistence and SVG art coverage, runs Chromium through all three encounters and rewards to victory, checks mobile containment, captures screenshots under `artifacts/`, and fails on browser-console errors.
+The deterministic simulation plays all three encounter scripts through real draws, sacrifices, Bone spending, lane placement, and combat. The E2E script verifies the tutorial, soundtrack/effects, audio persistence, illustrated cards, all three encounters/rewards, victory, retry and defeat. It also checks pointer/touch/keyboard inspection, paged hands, dialog focus, tutorial reachability, and full-viewport containment at desktop, tablet, portrait phone, and short landscape sizes. Screenshots are captured under `artifacts/`; browser-console errors fail the run.
 
 ## Project structure
 
 ```text
 index.html              Browser structure and overlays
-styles.css              Oak, felt, rag-paper, brass, and responsive visual system
+styles.css              Game stage, physical objects, cards, and responsive layouts
+assets/ui/              Original local table texture
 src/core.js             Pure card-game rules
 src/cards.js            Card templates and instances
 src/illustrations.js    32 local linocut SVG card illustrations
@@ -199,6 +206,7 @@ src/game.js             Browser controller and rendering
 tests/                  Node unit tests
 scripts/e2e.mjs         Playwright Chromium journey
 RESEARCH.md             Source-backed Act I implementation reference
+RESEARCH_UI.md          Gameplay screenshot study and rejected-interface audit
 DESIGN.md               Scoped production brief
 GEMINI_DESIGN_REVIEW.md Antigravity/Gemini audit and redesign record
 artifacts/               Verified screenshots
