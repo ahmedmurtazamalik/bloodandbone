@@ -11,7 +11,7 @@ import { MATCH_RULES } from './match-rules.js';
 import { advanceRound } from './round-coordinator.js';
 
 const ui = Object.fromEntries([
-  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','cardInspector','inspectorCard','inspectorDetails','inspectorClose','inspectButton','handPrevious','handNext','handPageReadout',
+  'titleScreen','tableScreen','rewardScreen','resultScreen','startButton','tutorialButton','restartButton','trialLabel','opponentName','opponentSubtitle','scaleBeam','scaleReadout','enemyWeights','playerWeights','boneReserve','bonePile','bonesReadout','turnReadout','phaseReadout','previewRow','opponentRow','playerRow','enemyPower','mainDeck','sideDeck','mainCount','sideCount','hand','instruction','bellButton','maneuverButton','mendButton','actionTray','selectionSummary','offerButton','cancelButton','rewardChoices','scoutDialog','scoutChoices','rulesButton','rulesDialog','sigilGlossary','replayTutorial','audioButton','audioIcon','audioDialog','muteButton','musicVolume','musicValue','sfxVolume','sfxValue','ledgerPanel','ledgerToggle','turnLog','tutorialOverlay','tutorialProgress','tutorialTitle','tutorialCopy','tutorialContinue','tutorialSkip','resultEyebrow','resultTitle','resultCopy','toast','board','menuButton','pauseDialog','resumeButton','titleRulesButton','titleAudioButton','ledgerButton','ledgerDialog','deckViewButton','deckDialog','deckChoices','cardInspector','inspectorCard','inspectorDetails','inspectorClose','inspectButton','handPrevious','handNext','handPageReadout',
 ].map(id => [id, document.getElementById(id)]));
 
 const SIGILS = Object.freeze({
@@ -621,6 +621,15 @@ function openDialog(dialog, returnTarget) {
   if (!dialog.open) dialog.showModal();
 }
 
+function renderDeckCollection() {
+  const counts = new Map();
+  for (const key of run?.deck || STARTER_DECK) counts.set(key, (counts.get(key) || 0) + 1);
+  ui.deckChoices.innerHTML = `<p class="deck-summary">${run?.deck.length || STARTER_DECK.length} cards · ${counts.size} creatures</p><div class="deck-grid">${[...counts].map(([key, count]) => {
+    const card = createCard(key);
+    return `<button class="deck-card" data-key="${key}" aria-label="Inspect ${escapeHtml(cardDescription(card))} ${count} in your deck.">${cardHtml(card)}<span class="deck-count">×${count}</span></button>`;
+  }).join('')}</div>`;
+}
+
 function renderAudioControls() {
   const state = audio.snapshot();
   const musicPercent = Math.round(state.musicVolume * 100);
@@ -696,6 +705,7 @@ function render() {
   ui.resultScreen.hidden = !['victory', 'retry', 'defeat'].includes(scene);
   if (scene === 'battle') { renderBattle(); renderTurnLog(); } if (scene === 'reward') renderRewards(); if (['victory', 'retry', 'defeat'].includes(scene)) renderResult();
   renderTutorial(); renderAudioControls();
+  ui.deckViewButton.disabled = !run;
   ui.ledgerButton.disabled = !ledger.snapshot().length;
   if (sceneChanged) {
     const focusTarget = scene === 'reward' ? ui.rewardChoices.querySelector('button')
@@ -722,7 +732,8 @@ ui.ledgerButton.addEventListener('click', () => {
   audio.playCue('ui'); openDialog(ui.ledgerDialog, ui.ledgerButton); renderTurnLog();
   requestAnimationFrame(() => { ui.turnLog.scrollTop = ui.turnLog.scrollHeight; });
 });
-for (const dialog of [ui.pauseDialog, ui.rulesDialog, ui.audioDialog, ui.ledgerDialog]) dialog.addEventListener('close', () => {
+ui.deckViewButton.addEventListener('click', () => { audio.playCue('ui'); renderDeckCollection(); openDialog(ui.deckDialog, ui.deckViewButton); });
+for (const dialog of [ui.pauseDialog, ui.rulesDialog, ui.audioDialog, ui.ledgerDialog, ui.deckDialog]) dialog.addEventListener('close', () => {
   if (document.querySelector('dialog[open]')) return;
   closeInspector();
   const returnTarget = dialogReturnFocus.get(dialog);
@@ -735,7 +746,7 @@ ui.inspectButton.addEventListener('click', () => showInspector(selectedCard(), u
 ui.inspectorClose.addEventListener('click', () => closeInspector(true));
 
 const inspectionControl = target => target?.closest('.hand-card, .lane, .deck-card');
-for (const container of [ui.hand, ui.playerRow, ui.opponentRow, ui.previewRow]) {
+for (const container of [ui.hand, ui.playerRow, ui.opponentRow, ui.previewRow, ui.deckChoices]) {
   container.addEventListener('pointerover', event => {
     if (event.pointerType === 'touch' || suppressPassiveHover) return;
     const control = inspectionControl(event.target);
