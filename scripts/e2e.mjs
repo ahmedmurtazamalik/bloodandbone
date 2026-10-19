@@ -135,6 +135,72 @@ async function tapExposedCard(target, card) {
   await target.touchscreen.tap(point.x, point.y);
 }
 
+async function assertCaptionLayout(target, container) {
+  const labels = await target.locator(`${container} .choice-ability`).evaluateAll(abilities => abilities.flatMap(ability => [...ability.children]).map(element => {
+    const rect = element.getBoundingClientRect();
+    const button = element.closest('button').getBoundingClientRect();
+    return { text: element.textContent, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, button: { left: button.left, right: button.right, top: button.top, bottom: button.bottom }, viewport: { width: innerWidth, height: innerHeight }, width: element.clientWidth, height: element.clientHeight, scrollWidth: element.scrollWidth, scrollHeight: element.scrollHeight };
+  }));
+  for (const label of labels) {
+    assert.ok(label.text.trim(), 'Choice descriptions must contain readable text');
+    assert.ok(label.left >= label.button.left - 1 && label.right <= label.button.right + 1 && label.top >= label.button.top - 1 && label.bottom <= label.button.bottom + 1,
+      `Choice description escapes its button: ${label.text}`);
+    assert.ok(label.left >= -1 && label.right <= label.viewport.width + 1 && label.top >= -1 && label.bottom <= label.viewport.height + 1,
+      `Choice description is outside the viewport: ${label.text}`);
+    assert.ok((!label.width || label.scrollWidth <= label.width + 1) && (!label.height || label.scrollHeight <= label.height + 1),
+      `Choice description is clipped: ${label.text}`);
+  }
+  for (const [index, choice] of (await target.locator(`${container} .reward-card`).all()).entries()) {
+    await assertActionReachable(target, `${container} > .reward-card:nth-child(${index + 1})`);
+    assert.equal(await choice.isVisible(), true);
+  }
+}
+
+async function assertChoiceAbilities(target, container) {
+  for (const choice of await target.locator(`${container} .reward-card`).all()) {
+    const expected = await choice.locator('.sigil').evaluateAll(sigils => sigils.map(sigil => {
+      const divider = sigil.title.indexOf(': ');
+      return { name: sigil.title.slice(0, divider), effect: sigil.title.slice(divider + 2) };
+    }));
+    const captions = await choice.locator('.choice-ability').evaluateAll(abilities => abilities.map(ability => ({ name: ability.querySelector('strong').textContent, effect: ability.querySelector('span').textContent })));
+    assert.deepEqual(captions, expected, 'Choice buttons must display complete sigil names and effects');
+    assert.equal(await choice.locator('.choice-abilities').count(), expected.length ? 1 : 0);
+  }
+  await assertCaptionLayout(target, container);
+}
+
+async function checkLongChoiceCaptions(target, container) {
+  // These library sigils are absent from the current run's offers. Exercise their real glossary text as a CSS-only fixture.
+  const originals = await target.locator(`${container} .reward-card`).evaluateAll(choices => choices.map(choice => choice.querySelector('.choice-abilities')?.outerHTML || null));
+  const prepared = await target.evaluate(container => {
+    const choices = [...document.querySelectorAll(`${container} .reward-card`)];
+    const template = document.querySelector(`${container} .choice-ability`);
+    if (!template) return false;
+    for (const [index, name] of ['Fecundity', 'Unkillable'].entries()) {
+      const glossary = [...document.querySelectorAll('#sigilGlossary p')].find(entry => entry.querySelector('b')?.textContent === name);
+      const ability = template.cloneNode(true);
+      ability.querySelector('strong').textContent = name;
+      ability.querySelector('span').textContent = glossary.textContent.slice(name.length).trim();
+      let captions = choices[index].querySelector('.choice-abilities');
+      if (!captions) { captions = document.createElement('span'); captions.className = 'choice-abilities'; choices[index].append(captions); }
+      captions.replaceChildren(ability);
+    }
+    return true;
+  }, container);
+  assert.equal(prepared, true, 'Long-caption fixture needs a rendered ability template');
+  try {
+    await assertCaptionLayout(target, container);
+  } finally {
+    await target.evaluate(({ container, originals }) => {
+      [...document.querySelectorAll(`${container} .reward-card`)].forEach((choice, index) => {
+        choice.querySelector('.choice-abilities')?.remove();
+        if (originals[index]) choice.insertAdjacentHTML('beforeend', originals[index]);
+      });
+    }, { container, originals });
+  }
+  await assertChoiceAbilities(target, container);
+}
+
 async function checkLargeHand(target, label) {
   const limit = await target.evaluate(() => innerWidth <= 600 ? 5 : 7);
   while ((await battleSnapshot(target)).handCount < limit + 2) {
@@ -255,6 +321,7 @@ try {
   await page.locator('#mainDeck').click();
   assert.equal(await page.locator('#scoutDialog').isVisible(), true);
   assert.equal(await page.locator('#scoutChoices .reward-card').count(), 3);
+  await assertChoiceAbilities(page, '#scoutChoices');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#scoutDialog').isVisible(), true, 'Scout must require a card choice');
   await captureScreen(page, 'artifacts/scout.png');
@@ -321,12 +388,14 @@ try {
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
   assert.equal(await page.locator('#rewardChoices .reward-card').count(), 3);
   assert.equal(await page.locator('#rewardChoices .reward-card .portrait svg').count(), 3);
+  await assertChoiceAbilities(page, '#rewardChoices');
   const firstRewardKeys = await page.locator('#rewardChoices .reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
   await captureScreen(page, 'artifacts/reward.png');
   await page.locator('#rewardChoices .reward-card').first().click();
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().encounter === 1);
   await page.evaluate(() => window.__BLOOD_BONE__.winBattle());
   await page.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
+  await assertChoiceAbilities(page, '#rewardChoices');
   const secondRewardKeys = await page.locator('#rewardChoices .reward-card').evaluateAll(cards => cards.map(card => card.dataset.key));
   assert.equal(secondRewardKeys.some(key => firstRewardKeys.includes(key)), false);
   await page.locator('#rewardChoices .reward-card').first().click();
@@ -484,6 +553,7 @@ try {
     await responsive.waitForFunction(turn => window.__BLOOD_BONE__.snapshot().turn > turn && !document.querySelector('#tableScreen').classList.contains('busy'), beforeScoutTurn);
     await responsive.locator('#mainDeck').click();
     await assertInViewport(responsive, '#scoutDialog', `${label} Scout choices`);
+    await assertChoiceAbilities(responsive, '#scoutChoices');
     if (touch) await captureScreen(responsive, `artifacts/scout-caption-${viewport.width}.png`);
     await responsive.locator('#scoutChoices .reward-card').first().click();
     assert.equal(await responsive.locator('#scoutDialog').isVisible(), false);
@@ -493,6 +563,8 @@ try {
     await responsive.waitForFunction(() => window.__BLOOD_BONE__.snapshot().scene === 'reward');
     assert.equal(await responsive.locator('#pauseDialog').isVisible(), false, 'A scene change must close the old menu');
     await assertGameViewport(responsive, `${label} reward`);
+    await assertChoiceAbilities(responsive, '#rewardChoices');
+    if (viewport.width === 320 || viewport.width === 640) await checkLongChoiceCaptions(responsive, '#rewardChoices');
     assert.equal(await responsive.locator('#rewardChoices .reward-card').first().evaluate(element => element === document.activeElement), true);
     for (const choice of await responsive.locator('#rewardChoices .reward-card').all()) {
       await choice.scrollIntoViewIfNeeded();

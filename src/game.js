@@ -400,6 +400,12 @@ function cardDescription(card) {
   return `${card.name}. ${card.power} Power, ${card.health} Health. ${cost}.${abilities.length ? ` ${abilities.join(' ')}` : ''}`;
 }
 
+function choiceAbilitiesHtml(card) {
+  const abilities = sigilsOf(card).filter(sigil => SIGILS[sigil]);
+  if (!abilities.length) return '';
+  return `<span class="choice-abilities">${abilities.map(sigil => `<span class="choice-ability"><strong>${escapeHtml(SIGILS[sigil][1])}</strong><span>${escapeHtml(SIGILS[sigil][2])}</span></span>`).join('')}</span>`;
+}
+
 const ICON_PATHS = Object.freeze({
   blood: '<path d="M12 2C9 7 5 10 5 15a7 7 0 0 0 14 0c0-5-4-8-7-13Z"/><path d="M8 15a4 4 0 0 0 4 4"/>',
   bones: '<path d="m7 5 12 12c3-1 4 3 2 4s-4 1-4-2L5 7C2 8 1 4 3 3s4-1 4 2Z"/>',
@@ -744,13 +750,13 @@ function selectionText(card) {
 function renderRewards() {
   ui.rewardChoices.innerHTML = rewardKeys.map(key => {
     const card = createCard(key);
-    return `<button class="reward-card" data-key="${key}" aria-label="Choose ${escapeHtml(cardDescription(card))}">${cardHtml(card)}</button>`;
+    return `<button class="reward-card" data-key="${key}" aria-label="Choose ${escapeHtml(cardDescription(card))}">${cardHtml(card)}${choiceAbilitiesHtml(card)}</button>`;
   }).join('');
   ui.rewardChoices.querySelectorAll('button').forEach(button => button.addEventListener('click', () => takeReward(button.dataset.key)));
 }
 
 function renderScoutChoices() {
-  ui.scoutChoices.innerHTML = scoutOptions.map(card => `<button class="reward-card" data-id="${card.id}" aria-label="Draw ${escapeHtml(cardDescription(card))}">${cardHtml(card)}</button>`).join('');
+  ui.scoutChoices.innerHTML = scoutOptions.map(card => `<button class="reward-card" data-id="${card.id}" aria-label="Draw ${escapeHtml(cardDescription(card))}">${cardHtml(card)}${choiceAbilitiesHtml(card)}</button>`).join('');
   ui.scoutChoices.querySelectorAll('button').forEach(button => button.addEventListener('click', () => chooseScout(button.dataset.id)));
 }
 
