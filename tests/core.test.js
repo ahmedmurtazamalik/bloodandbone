@@ -260,6 +260,26 @@ test('fledgling creatures mature after surviving their side turn', () => {
   assert.equal(aged.playerLanes[0].sigils.includes('fledgling'), false);
 });
 
+test('matured creatures can be mended to their new printed Health', () => {
+  const cub = createCard('wolfCub');
+  const opening = createBattle({ bones: 2, playerLanes: [cub], opponentLanes: [createCard('stoat')] });
+  const grown = ageCards(opening, 'player');
+  assert.equal(grown.playerLanes[0].maxHealth, 2);
+  assert.equal(opening.playerLanes[0].maxHealth, 1, 'maturation must not mutate the previous state');
+  const wounded = resolveCombat(grown, 'opponent').state;
+  assert.equal(wounded.playerLanes[0].health, 1);
+  const mended = mendCreature(wounded, 0);
+  assert.equal(mended.ok, true);
+  assert.equal(mended.state.playerLanes[0].health, 2);
+  assert.equal(mended.state.bones, 0);
+
+  const injuredFledgling = { ...createCard('stoat'), health: 1, sigils: ['fledgling'] };
+  const elder = ageCards(createBattle({ bones: 2, playerLanes: [injuredFledgling] }));
+  assert.equal(elder.playerLanes[0].health, 3, 'maturation preserves existing damage');
+  assert.equal(elder.playerLanes[0].maxHealth, 5);
+  assert.equal(mendCreature(elder, 0).state.playerLanes[0].health, 5);
+});
+
 test('an exhausted player can continue taking turns without an impossible draw', () => {
   const exhausted = beginPlayerTurn(createBattle({ turn: 4, deck: [], sideDeck: [], hasDrawn: false }));
   assert.equal(exhausted.turn, 5);

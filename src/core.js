@@ -144,6 +144,8 @@ export function ageCards(state, side = 'player') {
   for (const card of lanes) {
     if (!card?.sigils?.includes('fledgling')) continue;
     card.sigils = card.sigils.filter(sigil => sigil !== 'fledgling');
+    const healthGain = card.key === 'wolfCub' ? 1 : 2;
+    card.maxHealth = (card.maxHealth ?? card.health) + healthGain;
     if (card.key === 'wolfCub') { card.name = 'Wolf'; card.power = 3; card.health += 1; }
     else { card.name = `Elder ${card.name}`; card.power += 1; card.health += 2; }
   }
