@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'bb_tutorial_completed';
 
 export const TUTORIAL_STEPS = Object.freeze([
-  Object.freeze({ id: 'welcome', action: 'continue', title: 'Learn the table', copy: 'Enemy cards arrive face-up. You will make a real opening play, offer a creature, earn a Bone, and resolve combat.', spotlight: '#board' }),
+  Object.freeze({ id: 'welcome', action: 'continue', title: 'Learn the table', copy: 'Play a creature, offer it for Blood, and ring the bell. Incoming cards show the enemy’s next move.', spotlight: '#board' }),
   Object.freeze({ id: 'select-squirrel', action: 'select-card', target: 'squirrel', title: 'Start with the small creature', copy: 'Your opening Squirrel costs nothing. Select it from your hand.', spotlight: '.hand-card[data-key="squirrel"]' }),
   Object.freeze({ id: 'place-squirrel', action: 'place-lane', target: 0, title: 'Claim the first lane', copy: 'Place the Squirrel in your leftmost lane. It can block—or become an offering.', spotlight: '.lane.player[data-lane="0"]' }),
   Object.freeze({ id: 'select-stoat', action: 'select-card', target: 'stoat', title: 'Choose a Blood creature', copy: 'Stoat costs one Blood. Select it from your hand.', spotlight: '.hand-card[data-key="stoat"]' }),
@@ -11,7 +11,7 @@ export const TUTORIAL_STEPS = Object.freeze([
   Object.freeze({ id: 'explain-bones', action: 'continue', title: 'Death leaves Bones', copy: 'Your Bone pile increased. Bone-cost cards spend this reserve without sacrifices.', spotlight: '#boneReserve' }),
   Object.freeze({ id: 'ring-bell', action: 'ring-bell', title: 'Resolve the lanes', copy: 'Ring the brass bell. Your creatures attack first; unblocked Power tips the balance.', spotlight: '#bellButton' }),
   Object.freeze({ id: 'draw-squirrel', action: 'draw', target: 'side', title: 'Choose every later draw', copy: 'A new turn begins. Draw a dependable Squirrel, or Scout three creatures and choose one.', spotlight: '#sideDeck' }),
-  Object.freeze({ id: 'complete', action: 'continue', title: 'The table is yours', copy: 'Read incoming threats, build your scale lead through the sixteen-turn contest, and use the Rules book whenever a sigil is unfamiliar.', spotlight: '#board' }),
+  Object.freeze({ id: 'complete', action: 'continue', title: 'The table is yours', copy: 'Build a lead in the sixteen-turn contest. Read incoming cards and check Rules for sigils.', spotlight: '#board' }),
 ]);
 
 export class TutorialController {

@@ -44,6 +44,8 @@ let tacticSourceLane = null;
 let busy = false;
 let toastTimer = null;
 let renderedScene = null;
+let renderedTutorialStep = null;
+let returnTutorialFocus = false;
 let handPage = 0;
 let suppressInspection = false;
 let inspectorPinned = false;
@@ -543,19 +545,83 @@ function changeHandPage(delta) {
   focusBattleAction();
 }
 
+function positionTutorialCoach(step, spotlight) {
+  if (ui.tutorialOverlay.hidden || document.querySelector('dialog[open]')) return;
+  const coach = ui.tutorialOverlay;
+  coach.dataset.step = step.id;
+  coach.removeAttribute('data-space');
+  coach.style.removeProperty('--coach-top');
+  coach.style.removeProperty('--coach-bottom');
+  const viewportHeight = window.visualViewport?.height || innerHeight;
+  const parentTop = coach.offsetParent?.getBoundingClientRect().top || 0;
+  const rectFor = element => !element || element.hidden || !element.getClientRects().length ? null : element.getBoundingClientRect();
+  const handRect = rectFor(ui.hand);
+  const cardRects = [...ui.hand.querySelectorAll('.hand-card')].map(rectFor).filter(Boolean);
+  const handBounds = handRect ? {
+    left: Math.min(handRect.left, ...cardRects.map(rect => rect.left)),
+    right: Math.max(handRect.right, ...cardRects.map(rect => rect.right)),
+    top: Math.min(handRect.top, ...cardRects.map(rect => rect.top)),
+    bottom: Math.max(handRect.bottom, ...cardRects.map(rect => rect.bottom)),
+  } : null;
+  const protectedRects = [handBounds, rectFor(ui.mainDeck), rectFor(ui.sideDeck), rectFor(ui.actionTray), rectFor(ui.previewRow), rectFor(ui.opponentRow), rectFor(ui.playerRow)];
+  if (spotlight && spotlight !== ui.board) protectedRects.push(rectFor(spotlight));
+  const overlap = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+  const choosePlacement = () => {
+    const rect = coach.getBoundingClientRect();
+    const lowerLimit = Math.max(8, viewportHeight - rect.height - 8);
+    const relevant = protectedRects.filter(blocked => blocked && blocked.right > rect.left && blocked.left < rect.right);
+    let bands = [{ top: 8, bottom: viewportHeight - 8 }];
+    for (const blocked of relevant) bands = bands.flatMap(band => {
+      const top = Math.max(band.top, blocked.top - 3);
+      const bottom = Math.min(band.bottom, blocked.bottom + 3);
+      if (bottom <= top) return [band];
+      return [{ top: band.top, bottom: top }, { top: bottom, bottom: band.bottom }].filter(part => part.bottom > part.top);
+    });
+    const candidates = [rect.top, 8, lowerLimit,
+      ...bands.filter(band => band.bottom - band.top >= rect.height).map(band => (band.top + band.bottom - rect.height) / 2),
+      ...relevant.flatMap(blocked => [blocked.bottom + 6, blocked.top - rect.height - 6])];
+    return candidates.map(top => {
+      top = Math.max(8, Math.min(lowerLimit, top));
+      const candidate = { left: rect.left, right: rect.right, top, bottom: top + rect.height };
+      const covered = relevant.reduce((total, blocked) => total + overlap(candidate, blocked), 0);
+      return { top, covered, score: covered * 100 + Math.abs(top - rect.top) };
+    }).reduce((best, candidate) => candidate.score < best.score ? candidate : best);
+  };
+  let placement = choosePlacement();
+  if (placement.covered > 0 && window.matchMedia('(max-width: 700px) and (min-height: 501px)').matches) {
+    coach.dataset.space = 'compact';
+    placement = choosePlacement();
+  }
+  coach.style.setProperty('--coach-top', `${Math.round(placement.top - parentTop)}px`);
+  coach.style.setProperty('--coach-bottom', 'auto');
+}
+
 function renderTutorial() {
   document.querySelectorAll('.tutorial-focus').forEach(element => element.classList.remove('tutorial-focus'));
   const visible = tutorial.active && scene === 'battle';
   ui.tutorialOverlay.hidden = !visible;
   document.body.classList.toggle('tutorial-running', visible);
   ui.cancelButton.disabled = tutorial.active;
-  if (!visible) return;
+  if (!visible) { renderedTutorialStep = null; return; }
+  closeInspector();
   const step = tutorial.current();
   ui.tutorialProgress.textContent = `Guided hand · ${tutorial.index + 1} of ${TUTORIAL_STEPS.length}`;
   ui.tutorialTitle.textContent = step.title;
   ui.tutorialCopy.textContent = step.copy;
   ui.tutorialContinue.hidden = step.action !== 'continue';
-  requestAnimationFrame(() => document.querySelector(step.spotlight)?.classList.add('tutorial-focus'));
+  if (renderedTutorialStep !== step.id) {
+    const focusTarget = step.action === 'continue' ? ui.tutorialContinue : document.querySelector(step.spotlight);
+    if (focusTarget?.matches('button:not(:disabled), input:not(:disabled)')) {
+      focusWithoutInspection(focusTarget);
+      renderedTutorialStep = step.id;
+    }
+  }
+  requestAnimationFrame(() => {
+    if (!tutorial.active || scene !== 'battle' || tutorial.current()?.id !== step.id) return;
+    const spotlight = document.querySelector(step.spotlight);
+    spotlight?.classList.add('tutorial-focus');
+    positionTutorialCoach(step, spotlight);
+  });
 }
 
 function cardForControl(control) {
@@ -715,6 +781,7 @@ function render() {
     focusWithoutInspection(focusTarget);
   }
   renderedScene = scene;
+  if (returnTutorialFocus && scene === 'battle' && !busy) { focusBattleAction(); returnTutorialFocus = false; }
 }
 
 ui.startButton.addEventListener('click', () => startRun(tutorial.shouldAutoStart()));
@@ -822,10 +889,11 @@ ui.tutorialContinue.addEventListener('click', () => {
   if (!tutorialAllows('continue')) return;
   const finalStep = tutorial.current()?.id === 'complete';
   advanceTutorial('continue');
+  if (finalStep) returnTutorialFocus = true;
   render();
   if (finalStep) showToast('GUIDED HAND COMPLETE · THE TABLE IS YOURS');
 });
-ui.tutorialSkip.addEventListener('click', () => { tutorial.skip(); render(); showToast('TUTORIAL SKIPPED · REPLAY IT FROM THE RULEBOOK'); });
+ui.tutorialSkip.addEventListener('click', () => { tutorial.skip(); returnTutorialFocus = true; render(); showToast('TUTORIAL SKIPPED · REPLAY IT FROM THE RULEBOOK'); });
 document.addEventListener('keydown', event => {
   lastInteraction = 'keyboard';
   if (event.key !== 'Escape') suppressPassiveHover = false;
